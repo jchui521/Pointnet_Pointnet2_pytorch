@@ -112,3 +112,10 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+# Data folders (too large)
+data/
+log/
+
+# Python virtual environment
+.venv/
+venv/
