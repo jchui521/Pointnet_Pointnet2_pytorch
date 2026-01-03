@@ -33,6 +33,11 @@ The latest codes are tested on Ubuntu 16.04, CUDA10.1, PyTorch 1.6 and Python 3.
 conda install pytorch==1.6.0 cudatoolkit=10.1 -c pytorch
 ```
 
+## Examples layout (new)
+- `examples/original/` – the original PointNet/PointNet++ training & testing entrypoints, grouped by task (classification, part_seg, sem_seg). Top-level scripts now delegate to these.
+- `examples/twinner01_template/` – Twinner01 template with its own class config and wrappers; duplicate this folder for new Twinner variants.
+- `examples/s3dis_minimal/` – tiny S3DIS smoke test using a single room (e.g., Area_5 conferenceRoom_1) for quick validation.
+
 ## Classification (ModelNet10/40)
 ### Data Preparation
 Download alignment **ModelNet** [here](https://shapenet.cs.stanford.edu/media/modelnet40_normal_resampled.zip) and save in `data/modelnet40_normal_resampled/`.
@@ -119,18 +124,21 @@ Visualization results will save in `log/sem_seg/pointnet2_sem_seg/visual/` and y
 | PointNet (Pytorch) | 78.9 | 43.7| [40.7MB](log/sem_seg/pointnet_sem_seg) |
 | PointNet2_ssg (Pytorch) | **83.0** | **53.5**| [11.2MB](log/sem_seg/pointnet2_sem_seg) |
 
-## Visualization
-### Using show3d_balls.py
+## Visualization (Open3D)
+The semantic segmentation test script already generates `.obj` pairs (ground-truth and predictions) under `log/sem_seg/<log_dir>/visual/`.
+
+Use the Open3D viewer to inspect results:
 ```
-## build C++ code for visualization
-cd visualizer
-bash build.sh 
-## run one example 
-python show3d_balls.py
+# List available scenes
+python view_semseg_results.py --visual_dir log/sem_seg/pointnet2_sem_seg/visual
+
+# View a specific scene (opens two windows: ground-truth then predictions)
+python view_semseg_results.py --visual_dir log/sem_seg/pointnet2_sem_seg/visual --scene Area_5_office_1
 ```
-![](/visualizer/pic.png)
-### Using MeshLab
-![](/visualizer/pic2.png)
+
+Controls: press `Q` or close window to advance; mouse to rotate/zoom/pan.
+
+You can still open the generated `.obj` files with MeshLab if you prefer.
 
 
 ## Reference By

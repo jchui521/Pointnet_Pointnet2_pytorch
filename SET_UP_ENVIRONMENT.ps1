@@ -21,7 +21,7 @@ Write-Host "============================================" -ForegroundColor Yello
 Write-Host "Project Root: $ProjectRoot" -ForegroundColor White
 Write-Host "Python: $env:PYTHON_PATH" -ForegroundColor White
 Write-Host "`nGPU Info:" -ForegroundColor Cyan
-& $env:PYTHON_PATH -c "import torch; print(f'PyTorch: {torch.__version__}'); print(f'CUDA Available: {torch.cuda.is_available()}'); print(f'GPU: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else \"N/A\"}')"
+& $env:PYTHON_PATH -c "import torch, open3d; print('PyTorch:', torch.__version__); print('CUDA Available:', torch.cuda.is_available()); print('GPU:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'N/A'); print('Open3D:', open3d.__version__)"
 
 Write-Host "`n============================================" -ForegroundColor Yellow
 Write-Host "Quick Commands:" -ForegroundColor Cyan

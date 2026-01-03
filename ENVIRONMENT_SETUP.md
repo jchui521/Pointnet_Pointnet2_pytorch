@@ -17,6 +17,7 @@ This will:
 - Activate the virtual environment
 - Display GPU/CUDA information
 - Show available quick commands
+- Verify PyTorch and Open3D availability
 
 ---
 
@@ -94,6 +95,7 @@ python test_classification.py --log_dir pointnet2_msg_normals --use_normals
 - `scikit-learn==1.6.1`
 - `h5py==3.14.0`
 - `tqdm`
+- `open3d`
 
 ---
 
@@ -150,6 +152,9 @@ python train_partseg.py --model pointnet2_part_seg_msg --normal --log_dir my_par
 # Test with visualization
 python test_semseg.py --log_dir pointnet2_sem_seg --test_area 5 --visual
 
+# Visualize results (Open3D)
+python view_semseg_results.py --visual_dir log/sem_seg/pointnet2_sem_seg/visual --scene Area_5_office_1
+
 # Train new model
 python train_semseg.py --model pointnet2_sem_seg --test_area 5 --log_dir my_semseg
 ```
@@ -177,7 +182,7 @@ The environment is configured to exclude large data files:
 
 - **Original Repository**: https://github.com/yanx27/Pointnet_Pointnet2_pytorch
 - **Your Repository**: https://github.com/Drshelden/Pointnet_Pointnet2_pytorch
-- **MeshLab** (for visualization): http://www.meshlab.net/
+- **Open3D** (for visualization): http://www.open3d.org
 
 ---
 

@@ -7,6 +7,8 @@ This guide walks you through setting up custom semantic segmentation for your ow
 
 ## Required Data Characteristics
 
+> Tip: Install Open3D (already in `requirements.txt`) to visualize your scenes and labels after processing.
+
 ### Data Format
 Your point cloud data must be in **NumPy format (.npy)** with this structure:
 

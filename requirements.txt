@@ -8,3 +8,4 @@ scikit-learn>=1.2.0
 matplotlib>=3.7.0
 jupyter>=1.0.0
 ipykernel>=6.25.0
+open3d>=0.18.0

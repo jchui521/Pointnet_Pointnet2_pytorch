@@ -3,6 +3,8 @@
 ## Overview
 Complete pipeline for training custom semantic segmentation models on your annotated point cloud data.
 
+**Runtime dependencies**: PyTorch, Open3D (already listed in `requirements.txt`).
+
 ---
 
 ## Data Format: Annotated .xyz Files (S3DIS-style)
