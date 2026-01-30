@@ -1,0 +1,18 @@
+.\.venv\Scripts\Activate.ps1
+
+python train_semseg_win.py --model pointnet2_sem_seg --test_area 5 --log_dir pointnet2_sem_seg
+
+python test_semseg.py --log_dir pointnet2_sem_seg_eval --gpu 0 --num_point 4096 --batch_size 32 --test_area 5 
+
+
+python test_semseg_win.py `                                                                                   
+>>   --log_dir pointnet2_sem_seg_eval `
+>>   --gpu 0 `
+>>   --num_point 4096 `
+>>   --batch_size 32 `
+>>   --test_area 5 `
+>>   --scene_file data/stanford_indoor3d/Area_5_conferenceRoom_1.npy
+
+python visualizer\open3d_semseg_viewer.py --scene_file data\stanford_indoor3d\Area_5_conferenceRoom_1.npy --log_dir pointnet2_sem_seg_eval
+
+python visualizer\open3d_semseg_viewer.py --scene_file data\stanford_indoor3d\Area_5_conferenceRoom_1.npy --log_dir pointnet2_sem_seg_evalQ

@@ -1,0 +1,53 @@
+2026-01-07 09:04:17,906 - Model - INFO - PARAMETER ...
+2026-01-07 09:04:17,907 - Model - INFO - Namespace(batch_size=32, gpu='0', num_point=4096, log_dir='pointnet2_sem_seg_eval', visual=False, test_area=5, num_votes=3)
+2026-01-07 09:04:40,442 - Model - INFO - The number of test data is: 67
+2026-01-07 09:04:41,395 - Model - INFO - ---- EVALUATION WHOLE SCENE----
+2026-01-07 09:08:30,130 - Model - INFO - PARAMETER ...
+2026-01-07 09:08:30,131 - Model - INFO - Namespace(batch_size=32, gpu='0', num_point=4096, log_dir='pointnet2_sem_seg_eval', visual=False, test_area=5, num_votes=3, scene_file='data/s3dis/Stanford3dDataset_v1.2_Aligned_Version/Area_5/conferenceRoom_1/conferenceRoom_1.txt')
+2026-01-07 09:09:33,028 - Model - INFO - PARAMETER ...
+2026-01-07 09:09:33,029 - Model - INFO - Namespace(batch_size=32, gpu='0', num_point=4096, log_dir='pointnet2_sem_seg_eval', visual=False, test_area=5, num_votes=3, scene_file='data/stanford_indoor3d/Area_5_conferenceRoom_1.npy')
+2026-01-07 09:10:14,234 - Model - INFO - PARAMETER ...
+2026-01-07 09:10:14,234 - Model - INFO - Namespace(batch_size=32, gpu='0', num_point=4096, log_dir='pointnet2_sem_seg_eval', visual=False, test_area=5, num_votes=3, scene_file='data/stanford_indoor3d/Area_5_conferenceRoom_1.npy')
+2026-01-07 09:10:14,334 - Model - INFO - Single scene evaluation: Area_5_conferenceRoom_1
+2026-01-07 09:11:03,042 - Model - INFO - PARAMETER ...
+2026-01-07 09:11:03,043 - Model - INFO - Namespace(batch_size=32, gpu='0', num_point=4096, log_dir='pointnet2_sem_seg_eval', visual=False, test_area=5, num_votes=3, scene_file='data/stanford_indoor3d/Area_5_conferenceRoom_1.npy')
+2026-01-07 09:11:03,089 - Model - INFO - Single scene evaluation: Area_5_conferenceRoom_1
+2026-01-07 09:11:03,961 - Model - INFO - ---- EVALUATION WHOLE SCENE----
+2026-01-07 09:11:03,962 - Model - INFO - Inference [1/1] Area_5_conferenceRoom_1 ...
+2026-01-07 10:49:41,195 - Model - INFO - PARAMETER ...
+2026-01-07 10:49:41,196 - Model - INFO - Namespace(batch_size=32, gpu='0', num_point=4096, log_dir='pointnet2_sem_seg_eval', visual=False, test_area=5, num_votes=3, scene_file='data/stanford_indoor3d/Area_5_conferenceRoom_1.npy')
+2026-01-07 10:49:41,285 - Model - INFO - Single scene evaluation: Area_5_conferenceRoom_1
+2026-01-07 10:49:42,910 - Model - INFO - ---- EVALUATION WHOLE SCENE----
+2026-01-07 10:49:42,911 - Model - INFO - Inference [1/1] Area_5_conferenceRoom_1 ...
+2026-01-07 10:50:22,242 - Model - INFO - PARAMETER ...
+2026-01-07 10:50:22,243 - Model - INFO - Namespace(batch_size=32, gpu='0', num_point=4096, log_dir='pointnet2_sem_seg_eval', visual=False, test_area=5, num_votes=3, scene_file='data/stanford_indoor3d/Area_5_conferenceRoom_1.npy')
+2026-01-07 10:50:22,272 - Model - INFO - Single scene evaluation: Area_5_conferenceRoom_1
+2026-01-07 10:50:23,634 - Model - INFO - ---- EVALUATION WHOLE SCENE----
+2026-01-07 10:50:23,634 - Model - INFO - Inference [1/1] Area_5_conferenceRoom_1 ...
+2026-01-07 10:51:51,155 - Model - INFO - Mean IoU of Area_5_conferenceRoom_1: 0.0330
+2026-01-07 10:51:51,155 - Model - INFO - [0.21216096 0.02756425 0.08274856 0.         0.         0.
+ 0.         0.00029968 0.00285352 0.         0.         0.00168624
+ 0.00248722]
+2026-01-07 10:51:51,155 - Model - INFO - ----------------------------
+2026-01-07 10:51:54,669 - Model - INFO - ------- IoU --------
+class ceiling       , IoU: 0.212 
+class floor         , IoU: 0.028 
+class wall          , IoU: 0.083 
+class beam          , IoU: 0.000 
+class column        , IoU: 0.000 
+class window        , IoU: 0.000 
+class door          , IoU: 0.000 
+class table         , IoU: 0.000 
+class chair         , IoU: 0.003 
+class sofa          , IoU: 0.000 
+class bookcase      , IoU: 0.000 
+class board         , IoU: 0.002 
+class clutter       , IoU: 0.002 
+
+2026-01-07 10:51:54,671 - Model - INFO - eval point avg class IoU: 0.025369
+2026-01-07 10:51:54,671 - Model - INFO - eval whole scene point avg class acc: 0.071729
+2026-01-07 10:51:54,671 - Model - INFO - eval whole scene point accuracy: 0.212284
+2026-01-22 11:42:42,617 - Model - INFO - PARAMETER ...
+2026-01-22 11:42:42,619 - Model - INFO - Namespace(batch_size=32, gpu='0', num_point=4096, log_dir='pointnet2_sem_seg_eval', visual=False, test_area=5, num_votes=3)
+2026-01-22 11:43:01,847 - Model - INFO - The number of test data is: 67
+2026-01-22 11:43:03,729 - Model - INFO - ---- EVALUATION WHOLE SCENE----

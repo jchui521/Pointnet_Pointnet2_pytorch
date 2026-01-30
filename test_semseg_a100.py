@@ -1,6 +1,7 @@
 """
 Author: Benny
 Date: Nov 2019
+A100 Optimized with NumPy 2.0 compatibility
 """
 import argparse
 import os
@@ -31,9 +32,9 @@ for i, cat in enumerate(seg_classes.keys()):
 def parse_args():
     '''PARAMETERS'''
     parser = argparse.ArgumentParser('Model')
-    parser.add_argument('--batch_size', type=int, default=32, help='batch size in testing [default: 32]')
+    parser.add_argument('--batch_size', type=int, default=64, help='batch size in testing [default: 64]')
     parser.add_argument('--gpu', type=str, default='0', help='specify gpu device')
-    parser.add_argument('--num_point', type=int, default=4096, help='point number [default: 4096]')
+    parser.add_argument('--num_point', type=int, default=8192, help='point number [default: 8192]')
     parser.add_argument('--log_dir', type=str, required=True, help='experiment root')
     parser.add_argument('--visual', action='store_true', default=False, help='visualize result [default: False]')
     parser.add_argument('--test_area', type=int, default=5, help='area for testing, option: 1-6 [default: 5]')
@@ -79,8 +80,7 @@ def main(args):
     BATCH_SIZE = args.batch_size
     NUM_POINT = args.num_point
 
-    # Use the same path as training
-    root = 'data/stanford_indoor3d/'
+    root = 'data/s3dis/stanford_indoor3d/'
 
     TEST_DATASET_WHOLE_SCENE = ScannetDatasetWholeScene(root, split='test', test_area=args.test_area, block_points=NUM_POINT)
     log_string("The number of test data is: %d" % len(TEST_DATASET_WHOLE_SCENE))
@@ -89,7 +89,7 @@ def main(args):
     model_name = os.listdir(experiment_dir + '/logs')[0].split('.')[0]
     MODEL = importlib.import_module(model_name)
     classifier = MODEL.get_model(NUM_CLASSES).cuda()
-    checkpoint = torch.load(str(experiment_dir) + '/checkpoints/best_model.pth')
+    checkpoint = torch.load(str(experiment_dir) + '/checkpoints/best_model.pth', weights_only=False)
     classifier.load_state_dict(checkpoint['model_state_dict'])
     classifier = classifier.eval()
 
@@ -199,6 +199,3 @@ def main(args):
         print("Done!")
 
 
-if __name__ == '__main__':
-    args = parse_args()
-    main(args)

@@ -1,11 +1,13 @@
 """
 Author: Benny
 Date: Nov 2019
+A100 Optimized with NumPy 2.0 compatibility
 """
 import argparse
 import os
 from data_utils.S3DISDataLoader import S3DISDataset
 import torch
+from torch import amp
 import datetime
 import logging
 from pathlib import Path
@@ -37,18 +39,21 @@ def inplace_relu(m):
 def parse_args():
     parser = argparse.ArgumentParser('Model')
     parser.add_argument('--model', type=str, default='pointnet_sem_seg', help='model name [default: pointnet_sem_seg]')
-    parser.add_argument('--batch_size', type=int, default=16, help='Batch Size during training [default: 16]')
-    parser.add_argument('--epoch', default=32, type=int, help='Epoch to run [default: 32]')
-    parser.add_argument('--learning_rate', default=0.001, type=float, help='Initial learning rate [default: 0.001]')
-    parser.add_argument('--gpu', type=str, default='0', help='GPU to use [default: GPU 0]')
+    parser.add_argument('--batch_size', type=int, default=128, help='Batch Size during training [default: 128]')
+    parser.add_argument('--epoch', default=64, type=int, help='Epoch to run [default: 64]')
+    parser.add_argument('--learning_rate', default=0.004, type=float, help='Initial learning rate [default: 0.004]')
+    parser.add_argument('--gpu', type=str, default='0', help='GPUs to use [default: GPU 0]')
     parser.add_argument('--optimizer', type=str, default='Adam', help='Adam or SGD [default: Adam]')
     parser.add_argument('--log_dir', type=str, default=None, help='Log path [default: None]')
     parser.add_argument('--decay_rate', type=float, default=1e-4, help='weight decay [default: 1e-4]')
-    parser.add_argument('--npoint', type=int, default=4096, help='Point Number [default: 4096]')
+    parser.add_argument('--npoint', type=int, default=8192, help='Point Number [default: 8192]')
     parser.add_argument('--step_size', type=int, default=10, help='Decay step for lr decay [default: every 10 epochs]')
     parser.add_argument('--lr_decay', type=float, default=0.7, help='Decay rate for lr decay [default: 0.7]')
     parser.add_argument('--test_area', type=int, default=5, help='Which area to use for test, option: 1-6 [default: 5]')
-    parser.add_argument('--num_workers', type=int, default=4, help='Number of workers for data loading [default: 4]')
+    parser.add_argument('--num_workers', type=int, default=16, help='Number of workers for data loading [default: 16]')
+    parser.add_argument('--use_amp', action='store_true', default=True, help='Use mixed precision training [default: True]')
+    parser.add_argument('--amp_dtype', type=str, choices=['fp16', 'bf16'], default='fp16',
+                        help='AMP compute dtype: fp16 or bf16 [default: fp16]')
 
     return parser.parse_args()
 
@@ -60,6 +65,7 @@ def main(args):
 
     '''HYPER PARAMETER'''
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+    torch.backends.cuda.matmul.allow_tf32 = True
 
     '''CREATE DIR'''
     timestr = str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M'))
@@ -115,6 +121,12 @@ def main(args):
     shutil.copy('models/pointnet2_utils.py', str(experiment_dir))
 
     classifier = MODEL.get_model(NUM_CLASSES).cuda()
+    
+    # Enable multi-GPU support
+    if torch.cuda.device_count() > 1:
+        log_string(f'Using {torch.cuda.device_count()} GPUs for training')
+        classifier = torch.nn.DataParallel(classifier)
+    
     criterion = MODEL.get_loss().cuda()
     classifier.apply(inplace_relu)
 
@@ -128,7 +140,7 @@ def main(args):
             torch.nn.init.constant_(m.bias.data, 0.0)
 
     try:
-        checkpoint = torch.load(str(experiment_dir) + '/checkpoints/best_model.pth')
+        checkpoint = torch.load(str(experiment_dir) + '/checkpoints/best_model.pth', weights_only=False)
         start_epoch = checkpoint['epoch']
         classifier.load_state_dict(checkpoint['model_state_dict'])
         log_string('Use pretrain model')
@@ -160,6 +172,12 @@ def main(args):
     global_epoch = 0
     best_iou = 0
 
+    # Mixed precision training
+    amp_dtype = torch.bfloat16 if args.amp_dtype == 'bf16' else torch.float16
+    use_scaler = args.use_amp and args.amp_dtype == 'fp16'
+    scaler = amp.GradScaler('cuda') if use_scaler else None
+    log_string(f'Mixed Precision Training: {args.use_amp}, dtype: {args.amp_dtype}')
+
     for epoch in range(start_epoch, args.epoch):
         '''Train on chopped scenes'''
         log_string('**** Epoch %d (%d/%s) ****' % (global_epoch + 1, epoch + 1, args.epoch))
@@ -187,14 +205,29 @@ def main(args):
             points, target = points.float().cuda(), target.long().cuda()
             points = points.transpose(2, 1)
 
-            seg_pred, trans_feat = classifier(points)
-            seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
+            if args.use_amp:
+                with amp.autocast(device_type='cuda', dtype=amp_dtype):
+                    seg_pred, trans_feat = classifier(points)
+                    seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
+                    batch_label = target.view(-1, 1)[:, 0].cpu().data.numpy()
+                    target_view = target.view(-1, 1)[:, 0]
+                    loss = criterion(seg_pred, target_view, trans_feat, weights)
 
-            batch_label = target.view(-1, 1)[:, 0].cpu().data.numpy()
-            target = target.view(-1, 1)[:, 0]
-            loss = criterion(seg_pred, target, trans_feat, weights)
-            loss.backward()
-            optimizer.step()
+                if scaler is not None:
+                    scaler.scale(loss).backward()
+                    scaler.step(optimizer)
+                    scaler.update()
+                else:
+                    loss.backward()
+                    optimizer.step()
+            else:
+                seg_pred, trans_feat = classifier(points)
+                seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
+                batch_label = target.view(-1, 1)[:, 0].cpu().data.numpy()
+                target_view = target.view(-1, 1)[:, 0]
+                loss = criterion(seg_pred, target_view, trans_feat, weights)
+                loss.backward()
+                optimizer.step()
 
             pred_choice = seg_pred.cpu().data.max(1)[1].numpy()
             correct = np.sum(pred_choice == batch_label)
@@ -235,13 +268,18 @@ def main(args):
                 points, target = points.float().cuda(), target.long().cuda()
                 points = points.transpose(2, 1)
 
-                seg_pred, trans_feat = classifier(points)
+                if args.use_amp:
+                    with amp.autocast(device_type='cuda', dtype=amp_dtype):
+                        seg_pred, trans_feat = classifier(points)
+                else:
+                    seg_pred, trans_feat = classifier(points)
+                
                 pred_val = seg_pred.contiguous().cpu().data.numpy()
                 seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
 
                 batch_label = target.cpu().data.numpy()
-                target = target.view(-1, 1)[:, 0]
-                loss = criterion(seg_pred, target, trans_feat, weights)
+                target_view = target.view(-1, 1)[:, 0]
+                loss = criterion(seg_pred, target_view, trans_feat, weights)
                 loss_sum += loss
                 pred_val = np.argmax(pred_val, 2)
                 correct = np.sum((pred_val == batch_label))
@@ -256,12 +294,12 @@ def main(args):
                     total_iou_deno_class[l] += np.sum(((pred_val == l) | (batch_label == l)))
 
             labelweights = labelweights.astype(np.float32) / np.sum(labelweights.astype(np.float32))
-            mIoU = np.mean(np.array(total_correct_class) / (np.array(total_iou_deno_class, dtype=np.float) + 1e-6))
+            mIoU = np.mean(np.array(total_correct_class) / (np.array(total_iou_deno_class, dtype=np.float64) + 1e-6))
             log_string('eval mean loss: %f' % (loss_sum / float(num_batches)))
             log_string('eval point avg class IoU: %f' % (mIoU))
             log_string('eval point accuracy: %f' % (total_correct / float(total_seen)))
             log_string('eval point avg class acc: %f' % (
-                np.mean(np.array(total_correct_class) / (np.array(total_seen_class, dtype=np.float) + 1e-6))))
+                np.mean(np.array(total_correct_class) / (np.array(total_seen_class, dtype=np.float64) + 1e-6))))
 
             iou_per_class_str = '------- IoU --------\n'
             for l in range(NUM_CLASSES):

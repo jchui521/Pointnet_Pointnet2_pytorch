@@ -1,6 +1,7 @@
 """
 Author: Benny
 Date: Nov 2019
+Multi-GPU incremental scaling version
 """
 import argparse
 import os
@@ -37,10 +38,10 @@ def inplace_relu(m):
 def parse_args():
     parser = argparse.ArgumentParser('Model')
     parser.add_argument('--model', type=str, default='pointnet_sem_seg', help='model name [default: pointnet_sem_seg]')
-    parser.add_argument('--batch_size', type=int, default=16, help='Batch Size during training [default: 16]')
+    parser.add_argument('--batch_size', type=int, default=16, help='Batch Size PER GPU during training [default: 16]')
     parser.add_argument('--epoch', default=32, type=int, help='Epoch to run [default: 32]')
     parser.add_argument('--learning_rate', default=0.001, type=float, help='Initial learning rate [default: 0.001]')
-    parser.add_argument('--gpu', type=str, default='0', help='GPU to use [default: GPU 0]')
+    parser.add_argument('--gpu', type=str, default='0', help='GPUs to use [default: GPU 0]')
     parser.add_argument('--optimizer', type=str, default='Adam', help='Adam or SGD [default: Adam]')
     parser.add_argument('--log_dir', type=str, default=None, help='Log path [default: None]')
     parser.add_argument('--decay_rate', type=float, default=1e-4, help='weight decay [default: 1e-4]')
@@ -48,7 +49,7 @@ def parse_args():
     parser.add_argument('--step_size', type=int, default=10, help='Decay step for lr decay [default: every 10 epochs]')
     parser.add_argument('--lr_decay', type=float, default=0.7, help='Decay rate for lr decay [default: 0.7]')
     parser.add_argument('--test_area', type=int, default=5, help='Which area to use for test, option: 1-6 [default: 5]')
-    parser.add_argument('--num_workers', type=int, default=4, help='Number of workers for data loading [default: 4]')
+    parser.add_argument('--num_workers', type=int, default=10, help='Number of DataLoader workers [default: 10]')
 
     return parser.parse_args()
 
@@ -60,6 +61,10 @@ def main(args):
 
     '''HYPER PARAMETER'''
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+    
+    # Count GPUs and adjust batch size
+    num_gpus = len(args.gpu.split(','))
+    effective_batch_size = args.batch_size * num_gpus
 
     '''CREATE DIR'''
     timestr = str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M'))
@@ -88,21 +93,27 @@ def main(args):
     logger.addHandler(file_handler)
     log_string('PARAMETER ...')
     log_string(args)
+    log_string(f'Number of GPUs: {num_gpus}')
+    log_string(f'Batch size per GPU: {args.batch_size}')
+    log_string(f'Effective batch size: {effective_batch_size}')
 
     root = 'data/stanford_indoor3d/'
     NUM_CLASSES = 13
     NUM_POINT = args.npoint
     BATCH_SIZE = args.batch_size
+    # Adjust workers for multi-GPU: more workers for better throughput
+    num_workers = max(4, args.num_workers // 2) if num_gpus > 1 else args.num_workers
 
     print("start loading training data ...")
     TRAIN_DATASET = S3DISDataset(split='train', data_root=root, num_point=NUM_POINT, test_area=args.test_area, block_size=1.0, sample_rate=1.0, transform=None)
     print("start loading test data ...")
     TEST_DATASET = S3DISDataset(split='test', data_root=root, num_point=NUM_POINT, test_area=args.test_area, block_size=1.0, sample_rate=1.0, transform=None)
 
-    trainDataLoader = torch.utils.data.DataLoader(TRAIN_DATASET, batch_size=BATCH_SIZE, shuffle=True, num_workers=args.num_workers,
+    # DataLoader batch_size must be total batch (will be split across GPUs by DataParallel)
+    trainDataLoader = torch.utils.data.DataLoader(TRAIN_DATASET, batch_size=effective_batch_size, shuffle=True, num_workers=num_workers,
                                                   pin_memory=True, drop_last=True,
                                                   worker_init_fn=lambda x: np.random.seed(x + int(time.time())))
-    testDataLoader = torch.utils.data.DataLoader(TEST_DATASET, batch_size=BATCH_SIZE, shuffle=False, num_workers=args.num_workers,
+    testDataLoader = torch.utils.data.DataLoader(TEST_DATASET, batch_size=effective_batch_size, shuffle=False, num_workers=num_workers,
                                                  pin_memory=True, drop_last=True)
     weights = torch.Tensor(TRAIN_DATASET.labelweights).cuda()
 
@@ -115,6 +126,14 @@ def main(args):
     shutil.copy('models/pointnet2_utils.py', str(experiment_dir))
 
     classifier = MODEL.get_model(NUM_CLASSES).cuda()
+    
+    # Add multi-GPU support if more than 1 GPU
+    if num_gpus > 1:
+        log_string(f'Using DataParallel with {num_gpus} GPUs')
+        classifier = torch.nn.DataParallel(classifier)
+    else:
+        log_string('Using single GPU')
+    
     criterion = MODEL.get_loss().cuda()
     classifier.apply(inplace_relu)
 
@@ -128,7 +147,7 @@ def main(args):
             torch.nn.init.constant_(m.bias.data, 0.0)
 
     try:
-        checkpoint = torch.load(str(experiment_dir) + '/checkpoints/best_model.pth')
+        checkpoint = torch.load(str(experiment_dir) + '/checkpoints/best_model.pth', weights_only=False)
         start_epoch = checkpoint['epoch']
         classifier.load_state_dict(checkpoint['model_state_dict'])
         log_string('Use pretrain model')
@@ -191,15 +210,15 @@ def main(args):
             seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
 
             batch_label = target.view(-1, 1)[:, 0].cpu().data.numpy()
-            target = target.view(-1, 1)[:, 0]
-            loss = criterion(seg_pred, target, trans_feat, weights)
+            target_view = target.view(-1, 1)[:, 0]
+            loss = criterion(seg_pred, target_view, trans_feat, weights)
             loss.backward()
             optimizer.step()
 
             pred_choice = seg_pred.cpu().data.max(1)[1].numpy()
             correct = np.sum(pred_choice == batch_label)
             total_correct += correct
-            total_seen += (BATCH_SIZE * NUM_POINT)
+            total_seen += (effective_batch_size * NUM_POINT)
             loss_sum += loss
         log_string('Training mean loss: %f' % (loss_sum / num_batches))
         log_string('Training accuracy: %f' % (total_correct / float(total_seen)))
@@ -240,13 +259,13 @@ def main(args):
                 seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
 
                 batch_label = target.cpu().data.numpy()
-                target = target.view(-1, 1)[:, 0]
-                loss = criterion(seg_pred, target, trans_feat, weights)
+                target_view = target.view(-1, 1)[:, 0]
+                loss = criterion(seg_pred, target_view, trans_feat, weights)
                 loss_sum += loss
                 pred_val = np.argmax(pred_val, 2)
                 correct = np.sum((pred_val == batch_label))
                 total_correct += correct
-                total_seen += (BATCH_SIZE * NUM_POINT)
+                total_seen += (effective_batch_size * NUM_POINT)
                 tmp, _ = np.histogram(batch_label, range(NUM_CLASSES + 1))
                 labelweights += tmp
 
@@ -256,12 +275,12 @@ def main(args):
                     total_iou_deno_class[l] += np.sum(((pred_val == l) | (batch_label == l)))
 
             labelweights = labelweights.astype(np.float32) / np.sum(labelweights.astype(np.float32))
-            mIoU = np.mean(np.array(total_correct_class) / (np.array(total_iou_deno_class, dtype=np.float) + 1e-6))
+            mIoU = np.mean(np.array(total_correct_class) / (np.array(total_iou_deno_class, dtype=float) + 1e-6))
             log_string('eval mean loss: %f' % (loss_sum / float(num_batches)))
             log_string('eval point avg class IoU: %f' % (mIoU))
             log_string('eval point accuracy: %f' % (total_correct / float(total_seen)))
             log_string('eval point avg class acc: %f' % (
-                np.mean(np.array(total_correct_class) / (np.array(total_seen_class, dtype=np.float) + 1e-6))))
+                np.mean(np.array(total_correct_class) / (np.array(total_seen_class, dtype=float) + 1e-6))))
 
             iou_per_class_str = '------- IoU --------\n'
             for l in range(NUM_CLASSES):
