@@ -190,6 +190,7 @@ def main(args):
         num_workers=args.num_workers,
         pin_memory=True,
         drop_last=True,
+        persistent_workers=True,
         worker_init_fn=lambda x: np.random.seed(x + int(time.time())),
     )
     testDataLoader = torch.utils.data.DataLoader(
