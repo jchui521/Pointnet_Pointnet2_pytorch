@@ -1,0 +1,38 @@
+2026-02-10 22:13:46,981 - Model - INFO - PARAMETER ...
+2026-02-10 22:13:46,981 - Model - INFO - Namespace(model='pointnet_sem_seg', batch_size=128, epoch=1, learning_rate=0.001, gpu='0,1,2,3,4,5,6,7', optimizer='Adam', log_dir=None, decay_rate=0.0001, npoint=4096, step_size=10, lr_decay=0.7, test_area=5, num_workers=24)
+2026-02-10 22:14:12,413 - Model - INFO - The number of training data is: 47623
+2026-02-10 22:14:12,414 - Model - INFO - The number of test data is: 19191
+2026-02-10 22:14:12,449 - Model - INFO - No existing model, starting training from scratch...
+2026-02-10 22:14:13,225 - Model - INFO - **** Epoch 1 (1/1) ****
+2026-02-10 22:14:13,225 - Model - INFO - Learning rate:0.001000
+2026-02-10 22:23:08,253 - Model - INFO - Training mean loss: 1.215593
+2026-02-10 22:23:08,254 - Model - INFO - Training accuracy: 0.655271
+2026-02-10 22:23:08,254 - Model - INFO - Save model...
+2026-02-10 22:23:08,254 - Model - INFO - Saving at log/sem_seg/2026-02-10_22-13/checkpoints/model.pth
+2026-02-10 22:23:08,332 - Model - INFO - Saving model....
+2026-02-10 22:23:08,547 - Model - INFO - ---- EPOCH 001 EVALUATION ----
+2026-02-10 22:25:51,694 - Model - INFO - eval mean loss: 1.431294
+2026-02-10 22:25:51,694 - Model - INFO - eval point avg class IoU: 0.257325
+2026-02-10 22:25:51,694 - Model - INFO - eval point accuracy: 0.572517
+2026-02-10 22:25:51,694 - Model - INFO - eval point avg class acc: 0.412819
+2026-02-10 22:25:51,695 - Model - INFO - ------- IoU --------
+class ceiling        weight: 0.090, IoU: 0.825 
+class floor          weight: 0.201, IoU: 0.685 
+class wall           weight: 0.168, IoU: 0.489 
+class beam           weight: 0.275, IoU: 0.000 
+class column         weight: 0.000, IoU: 0.017 
+class window         weight: 0.019, IoU: 0.333 
+class door           weight: 0.033, IoU: 0.085 
+class table          weight: 0.030, IoU: 0.333 
+class chair          weight: 0.040, IoU: 0.172 
+class sofa           weight: 0.019, IoU: 0.038 
+class bookcase       weight: 0.003, IoU: 0.147 
+class board          weight: 0.112, IoU: 0.062 
+class clutter        weight: 0.012, IoU: 0.160 
+
+2026-02-10 22:25:51,695 - Model - INFO - Eval mean loss: 1.431294
+2026-02-10 22:25:51,695 - Model - INFO - Eval accuracy: 0.572517
+2026-02-10 22:25:51,695 - Model - INFO - Save model...
+2026-02-10 22:25:51,695 - Model - INFO - Saving at log/sem_seg/2026-02-10_22-13/checkpoints/best_model.pth
+2026-02-10 22:25:51,778 - Model - INFO - Saving model....
+2026-02-10 22:25:51,778 - Model - INFO - Best mIoU: 0.257325
