@@ -1,6 +1,17 @@
-"""Visualize .npy room files from data/stanford_indoor3d/ using Open3D."""
+"""Visualize .npy room files from data/stanford_indoor3d/ using Open3D.
+
+Snapshot camera parameters (--front, --lookat, --up, --zoom):
+  --front   direction the camera points FROM (e.g. 0 -1 0.5)
+  --lookat  point the camera looks AT, defaults to point cloud centroid
+  --up      camera up vector (default: 0 0 1)
+  --zoom    zoom level (default: 0.5, smaller = more zoomed in)
+
+Example
+  python visualize_room.py data/stanford_indoor3d/Area_1_office_1.npy --snapshot office1.png --front 0 0 1 --up 0 1 0 --zoom 0.4
+"""
 
 import argparse
+import json
 import os
 import sys
 
@@ -8,6 +19,7 @@ import numpy as np
 
 try:
     import open3d as o3d
+    from open3d.visualization import VisualizerWithKeyCallback as Visualizer  # type: ignore[attr-defined]
 except ImportError:
     print("Open3D is required. Install it with: pip install open3d")
     sys.exit(1)
@@ -35,7 +47,7 @@ CLASS_COLORS = np.array([
 ])
 
 
-def visualize(npy_path, color_mode="rgb"):
+def make_pcd(npy_path, color_mode="rgb"):
     data = np.load(npy_path)  # N x 7
     points = data[:, :3]
     rgb = data[:, 3:6] / 255.0
@@ -43,43 +55,139 @@ def visualize(npy_path, color_mode="rgb"):
 
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(points)
+    pcd.colors = o3d.utility.Vector3dVector(
+        CLASS_COLORS[labels] if color_mode == "label" else rgb
+    )
+    return pcd, labels, points
 
+
+def print_room_info(npy_path, color_mode, n_points, labels):
+    room_name = os.path.splitext(os.path.basename(npy_path))[0]
+    mode_str = "semantic labels" if color_mode == "label" else "RGB"
+    print(f"Showing: {room_name} ({mode_str})  [{n_points} points]")
     if color_mode == "label":
-        colors = CLASS_COLORS[labels]
-    else:
-        colors = rgb
+        print("Classes present:")
+        for c in np.unique(labels):
+            print(f"  {c:2d} - {CLASS_NAMES[c]}")
 
-    pcd.colors = o3d.utility.Vector3dVector(colors)
+
+def snapshot(pcd, output_path, front, lookat, up, zoom, width=1280, height=720):
+    """Render and save an image without leaving a persistent window."""
+    vis = Visualizer()
+    vis.create_window(visible=True, width=width, height=height)
+    vis.add_geometry(pcd)
+
+    ctr = vis.get_view_control()
+    ctr.set_front(front)
+    ctr.set_lookat(lookat)
+    ctr.set_up(up)
+    ctr.set_zoom(zoom)
+
+    vis.poll_events()
+    vis.update_renderer()
+    vis.capture_screen_image(output_path, do_render=True)
+    vis.destroy_window()
+    print(f"Saved: {output_path}")
+
+
+def visualize(npy_path, color_mode="rgb", snap_args=None):
+    pcd, labels, points = make_pcd(npy_path, color_mode)
+    print_room_info(npy_path, color_mode, len(points), labels)
 
     room_name = os.path.splitext(os.path.basename(npy_path))[0]
     mode_str = "semantic labels" if color_mode == "label" else "RGB"
     title = f"{room_name} ({mode_str})"
-    print(f"Showing: {title}  ({len(points)} points)")
 
-    if color_mode == "label":
-        unique = np.unique(labels)
-        print("Classes present:")
-        for c in unique:
-            print(f"  {c:2d} - {CLASS_NAMES[c]}")
+    if snap_args is not None:
+        front  = snap_args["front"]
+        lookat = snap_args["lookat"] if snap_args["lookat"] is not None else points.mean(axis=0).tolist()
+        up     = snap_args["up"]
+        zoom   = snap_args["zoom"]
+        output = snap_args["output"]
+        w, h   = snap_args["width"], snap_args["height"]
+        snapshot(pcd, output, front, lookat, up, zoom, w, h)
+    else:
+        def print_camera(vis):
+            traj = json.loads(vis.get_view_status())["trajectory"][0]
+            f = traj["front"]
+            l = traj["lookat"]
+            u = traj["up"]
+            z = traj["zoom"]
+            print(
+                f"\n--- camera ---\n"
+                f"  --front  {f[0]:.4f} {f[1]:.4f} {f[2]:.4f}\n"
+                f"  --lookat {l[0]:.4f} {l[1]:.4f} {l[2]:.4f}\n"
+                f"  --up     {u[0]:.4f} {u[1]:.4f} {u[2]:.4f}\n"
+                f"  --zoom   {z:.4f}\n"
+            )
+            return False  # don't close the window
 
-    o3d.visualization.draw_geometries([pcd], window_name=title, width=1280, height=720)
+        vis = Visualizer()
+        vis.create_window(window_name=title, width=1280, height=720)
+        vis.add_geometry(pcd)
+        vis.register_key_callback(ord("P"), print_camera)
+        print("  [P] print camera params")
+        vis.run()
+        vis.destroy_window()
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Visualize S3DIS room point clouds.")
+    parser = argparse.ArgumentParser(
+        description="Visualize S3DIS room point clouds.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=__doc__,
+    )
     parser.add_argument("file", nargs="?", help="Path to a specific .npy file.")
     parser.add_argument(
         "--dir", default="data/stanford_indoor3d",
-        help="Directory containing .npy files (default: data/stanford_indoor3d).",
+        help="Directory of .npy files (default: data/stanford_indoor3d).",
     )
     parser.add_argument(
         "--color", choices=["rgb", "label"], default="rgb",
-        help="Color mode: 'rgb' for original colors, 'label' for semantic class colors (default: rgb).",
+        help="Color mode: rgb or label (default: rgb).",
     )
+
+    # Snapshot options
+    snap = parser.add_argument_group("snapshot options")
+    snap.add_argument(
+        "--snapshot", metavar="OUTPUT.PNG",
+        help="Save an image to this path instead of opening an interactive window.",
+    )
+    snap.add_argument(
+        "--front", nargs=3, type=float, default=[0.0, -1.0, 0.5], metavar=("X", "Y", "Z"),
+        help="Camera front direction vector (default: 0 -1 0.5).",
+    )
+    snap.add_argument(
+        "--lookat", nargs=3, type=float, default=None, metavar=("X", "Y", "Z"),
+        help="Point the camera looks at (default: centroid of point cloud).",
+    )
+    snap.add_argument(
+        "--up", nargs=3, type=float, default=[0.0, 0.0, 1.0], metavar=("X", "Y", "Z"),
+        help="Camera up vector (default: 0 0 1).",
+    )
+    snap.add_argument(
+        "--zoom", type=float, default=0.5,
+        help="Zoom level (default: 0.5, smaller = more zoomed in).",
+    )
+    snap.add_argument("--width",  type=int, default=1280, help="Image width  (default: 1280).")
+    snap.add_argument("--height", type=int, default=720,  help="Image height (default: 720).")
+
     args = parser.parse_args()
 
+    snap_args = None
+    if args.snapshot:
+        snap_args = {
+            "output": args.snapshot,
+            "front":  args.front,
+            "lookat": args.lookat,
+            "up":     args.up,
+            "zoom":   args.zoom,
+            "width":  args.width,
+            "height": args.height,
+        }
+
     if args.file:
-        visualize(args.file, args.color)
+        visualize(args.file, args.color, snap_args)
         return
 
     npy_dir = args.dir
@@ -88,11 +196,16 @@ def main():
         print(f"No .npy files found in {npy_dir}")
         return
 
-    print(f"Found {len(files)} rooms. Press 'n' for next, 'q' to quit in the list below.\n")
+    print(f"Found {len(files)} rooms.\n")
     for i, f in enumerate(files):
         print(f"[{i + 1}/{len(files)}] {f}")
-        visualize(os.path.join(npy_dir, f), args.color)
-        if i < len(files) - 1:
+        out = snap_args
+        # Auto-name outputs when batch snapshotting
+        if snap_args is not None:
+            base, ext = os.path.splitext(snap_args["output"])
+            out = {**snap_args, "output": f"{base}_{os.path.splitext(f)[0]}{ext}"}
+        visualize(os.path.join(npy_dir, f), args.color, out)
+        if out is None and i < len(files) - 1:
             resp = input("Next room? (Enter=yes, q=quit): ").strip().lower()
             if resp == "q":
                 break
