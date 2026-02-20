@@ -14,6 +14,7 @@ import argparse
 import json
 import os
 import sys
+import colorsys
 
 import numpy as np
 
@@ -24,28 +25,57 @@ except ImportError:
     print("Open3D is required. Install it with: pip install open3d")
     sys.exit(1)
 
-CLASS_NAMES = [
-    "ceiling", "floor", "wall", "beam", "column", "window",
-    "door", "table", "chair", "sofa", "bookcase", "board", "clutter",
-]
+# CLASS_NAMES = [
+#     "ceiling", "floor", "wall", "beam", "column", "window",
+#     "door", "table", "chair", "sofa", "bookcase", "board", "clutter",
+# ]
 
-# Distinct colors per class (RGB 0-1)
-CLASS_COLORS = np.array([
-    [0.9, 0.1, 0.1],  # ceiling - red
-    [0.6, 0.4, 0.2],  # floor - brown
-    [0.8, 0.8, 0.8],  # wall - light gray
-    [1.0, 0.6, 0.0],  # beam - orange
-    [0.5, 0.0, 0.5],  # column - purple
-    [0.0, 0.6, 1.0],  # window - light blue
-    [0.0, 0.3, 0.7],  # door - dark blue
-    [1.0, 1.0, 0.0],  # table - yellow
-    [0.0, 0.8, 0.0],  # chair - green
-    [1.0, 0.4, 0.7],  # sofa - pink
-    [0.4, 0.2, 0.0],  # bookcase - dark brown
-    [0.0, 1.0, 1.0],  # board - cyan
-    [0.5, 0.5, 0.5],  # clutter - gray
-])
+CLASS_NAMES = ['Elbow',
+ 'Stairs',
+ 'Mechanical_Equipment',
+ 'Conduit_Elbow',
+ 'Duct',
+ 'HSS_Channel',
+ 'Wall',
+ 'Electrical_Equipment',
+ 'Conduit',
+ 'Light',
+ 'Reducer',
+ 'Valve',
+ 'Pipe',
+ 'Transition',
+ 'Floor',
+ 'Receptacle',
+ 'Tee',
+ 'Pressure_Gauge',
+ 'Mullion',
+ 'Coupling',
+ 'C_Channel']
 
+# # Distinct colors per class (RGB 0-1)
+# CLASS_COLORS = np.array([
+#     [0.9, 0.1, 0.1],  # ceiling - red
+#     [0.6, 0.4, 0.2],  # floor - brown
+#     [0.8, 0.8, 0.8],  # wall - light gray
+#     [1.0, 0.6, 0.0],  # beam - orange
+#     [0.5, 0.0, 0.5],  # column - purple
+#     [0.0, 0.6, 1.0],  # window - light blue
+#     [0.0, 0.3, 0.7],  # door - dark blue
+#     [1.0, 1.0, 0.0],  # table - yellow
+#     [0.0, 0.8, 0.0],  # chair - green
+#     [1.0, 0.4, 0.7],  # sofa - pink
+#     [0.4, 0.2, 0.0],  # bookcase - dark brown
+#     [0.0, 1.0, 1.0],  # board - cyan
+#     [0.5, 0.5, 0.5],  # clutter - gray
+# ])
+
+CLASS_COLORS = []
+n = len(CLASS_NAMES)
+for i, name in enumerate(CLASS_NAMES):
+    hue = i / n
+    rgb = colorsys.hsv_to_rgb(hue, 0.9, 0.9)
+    CLASS_COLORS.append([c for c in rgb])
+CLASS_COLORS = np.array(CLASS_COLORS)
 
 def make_pcd(npy_path, color_mode="rgb"):
     data = np.load(npy_path)  # N x 7
