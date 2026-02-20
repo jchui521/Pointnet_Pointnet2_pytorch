@@ -1,4 +1,0 @@
-2026-02-06 22:42:50,760 - Model - INFO - PARAMETER ...
-2026-02-06 22:42:50,760 - Model - INFO - Namespace(model='pointnet_sem_seg', batch_size=32, epoch=1, learning_rate=0.001, gpu='0,1,2,3,4,5,6,7', optimizer='Adam', log_dir=None, decay_rate=0.0001, npoint=4096, step_size=10, lr_decay=0.7, test_area=5, num_workers=8)
-2026-02-06 22:43:16,113 - Model - INFO - The number of training data is: 47623
-2026-02-06 22:43:16,113 - Model - INFO - The number of test data is: 19191
