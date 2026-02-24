@@ -26,7 +26,7 @@ ROOT_DIR = BASE_DIR
 sys.path.append(os.path.join(ROOT_DIR, "models"))
 
 classes = []
-with open(r"data\rpi_custom_dataset_01_raw\classes.txt", "r") as f:
+with open(r"data/rpi_custom_dataset_01_raw/classes.txt", "r") as f:
     classes = [line.rstrip() for line in f]
 NUM_CLASSES = len(classes)
 
@@ -58,7 +58,7 @@ def parse_args():
         help="Batch Size during training [default: 16]",
     )
     parser.add_argument(
-        "--epoch", default=32, type=int, help="Epoch to run [default: 32]"
+        "--epoch", default=1, type=int, help="Epoch to run [default: 1]"
     )
     parser.add_argument(
         "--learning_rate",
@@ -173,7 +173,7 @@ def main(args):
         shuffle=True,
         num_workers=args.num_workers,
         pin_memory=True,
-        drop_last=True,
+        # drop_last=True,
         persistent_workers=True,
         worker_init_fn=lambda x: np.random.seed(x + int(time.time())),
     )
@@ -183,12 +183,14 @@ def main(args):
         shuffle=False,
         num_workers=args.num_workers,
         pin_memory=True,
-        drop_last=True,
+        # drop_last=True,
     )
     weights = torch.Tensor(TRAIN_DATASET.labelweights).cuda()
 
     log_string("The number of training data is: %d" % len(TRAIN_DATASET))
     log_string("The number of test data is: %d" % len(TEST_DATASET))
+    log_string("The length of trainloader is : %d" % len(trainDataLoader))
+    log_string("The length of testlader is : %d" % len(testDataLoader))
 
     """MODEL LOADING"""
     MODEL = importlib.import_module(args.model)

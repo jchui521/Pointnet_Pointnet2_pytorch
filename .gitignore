@@ -114,7 +114,6 @@ dmypy.json
 .pyre/
 # Data folders (too large)
 data/
-log/
 
 # Python virtual environment
 .venv/
