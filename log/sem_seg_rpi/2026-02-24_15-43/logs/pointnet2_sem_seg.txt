@@ -1,0 +1,9 @@
+2026-02-24 15:43:01,197 - Model - INFO - PARAMETER ...
+2026-02-24 15:43:01,197 - Model - INFO - Namespace(model='pointnet2_sem_seg', batch_size=16, epoch=32, learning_rate=0.001, gpu='0', optimizer='Adam', log_dir=None, decay_rate=0.0001, npoint=4096, step_size=10, lr_decay=0.7, num_workers=0)
+2026-02-24 15:43:32,552 - Model - INFO - PARAMETER ...
+2026-02-24 15:43:32,552 - Model - INFO - Namespace(model='pointnet2_sem_seg', batch_size=16, epoch=32, learning_rate=0.001, gpu='0', optimizer='Adam', log_dir=None, decay_rate=0.0001, npoint=4096, step_size=10, lr_decay=0.7, num_workers=1)
+2026-02-24 15:43:35,379 - Model - INFO - The number of training data is: 3
+2026-02-24 15:43:35,379 - Model - INFO - The number of test data is: 3
+2026-02-24 15:43:35,406 - Model - INFO - No existing model, starting training from scratch...
+2026-02-24 15:43:37,439 - Model - INFO - **** Epoch 1 (1/32) ****
+2026-02-24 15:43:37,439 - Model - INFO - Learning rate:0.001000

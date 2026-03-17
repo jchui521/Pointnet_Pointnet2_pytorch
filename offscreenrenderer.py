@@ -65,19 +65,17 @@ for i, name in enumerate(CLASS_NAMES):
     CLASS_COLORS.append([c for c in rgb])
 CLASS_COLORS = np.array(CLASS_COLORS)
 
-def make_pcd(npy_path, color_mode="rgb"):
-    data = np.load(npy_path)  # N x 7
-    points = data[:, :3]
-    rgb = data[:, 3:6] / 255.0
+def make_pcd_from_numpy(data, color_mode="rgb"):
+    pc = data[:, :3]
+    rgb = data[:, 3:6]
     labels = data[:, 6].astype(int)
 
     pcd = o3d.geometry.PointCloud()
-    pcd.points = o3d.utility.Vector3dVector(points)
+    pcd.points = o3d.utility.Vector3dVector(pc)
     pcd.colors = o3d.utility.Vector3dVector(
         CLASS_COLORS[labels] if color_mode == "label" else rgb
     )
-    return pcd, labels, points
-
+    return pcd, labels, pc
 
 def print_room_info(npy_path, color_mode, n_points, labels):
     room_name = os.path.splitext(os.path.basename(npy_path))[0]
@@ -88,12 +86,11 @@ def print_room_info(npy_path, color_mode, n_points, labels):
         for c in np.unique(labels):
             print(f"  {c:2d} - {CLASS_NAMES[c]}")
 
-def take_snapshot(npy_path, color_mode, front, lookat, up, zoom, w, h, output):
-    print(f"Loading: {npy_path}")
-    pcd, labels, points = make_pcd(npy_path, color_mode)
-    print_room_info(npy_path, color_mode, len(points), labels)
-
-    room_name = os.path.splitext(os.path.basename(npy_path))[0]
+def take_snapshot(npy, color_mode, output, front=(0, 0, 1), lookat=(0, 0, 0), up=(0, 0, 1), zoom=0.5, w=1280, h=720):
+    if type(npy) == str:
+        npy = np.load(npy)
+    pcd, labels, points = make_pcd_from_numpy(npy, color_mode)
+    print_room_info(npy, color_mode, len(points), labels)
 
     render = rendering.OffscreenRenderer(w, h)
     render.set_camera(front, lookat, up, zoom)
@@ -119,5 +116,5 @@ def main():
 
     args = parser.parse_args()
 
-    take_snapshot(args.npy_path, args.color_mode, args.front, args.lookat, args.up, args.zoom, args.w, args.h, args.output)
+    take_snapshot(args.npy_path, args.color_mode, args.output, args.front, args.lookat, args.up, args.zoom, args.w, args.h)
 

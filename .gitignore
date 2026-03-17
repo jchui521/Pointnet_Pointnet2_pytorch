@@ -114,6 +114,9 @@ dmypy.json
 .pyre/
 # Data folders (too large)
 data/
+rpi_data/
+rpi_data_raw/
+zips/
 
 # Python virtual environment
 .venv/

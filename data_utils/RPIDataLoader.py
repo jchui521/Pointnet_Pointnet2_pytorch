@@ -140,33 +140,15 @@ class DatasetWholeScene:
             d for d in os.listdir(root)
         ]
         self.scene_points_list = []
-        self.semantic_labels_list = []
         self.room_coord_min, self.room_coord_max = [], []
         for file in self.file_list:
             data = np.load(os.path.join(root, file))
             points = data[:, :3]
             self.scene_points_list.append(data[:, :6])
-            self.semantic_labels_list.append(data[:, 6])
-            coord_min, coord_max = (
-                np.amin(points, axis=0)[:3],
-                np.amax(points, axis=0)[:3],
-            )
-            # self.room_coord_min.append(coord_min), self.room_coord_max.append(coord_max)
-        assert len(self.scene_points_list) == len(self.semantic_labels_list)
-
-        labelweights = np.zeros(num_classes)
-        for seg in self.semantic_labels_list:
-            tmp, _ = np.histogram(seg, range(num_classes + 1))
-            self.scene_points_num.append(seg.shape[0])
-            labelweights += tmp
-        labelweights = labelweights.astype(np.float32)
-        labelweights = labelweights / np.sum(labelweights)
-        self.labelweights = np.power(np.amax(labelweights) / labelweights, 1 / 3.0)
 
     def __getitem__(self, index):
         point_set_ini = self.scene_points_list[index]
         points = point_set_ini[:, :6]
-        labels = self.semantic_labels_list[index]
         coord_min, coord_max = np.amin(points, axis=0)[:3], np.amax(points, axis=0)[:3]
         grid_x = int(
             np.ceil(float(coord_max[0] - coord_min[0] - self.block_size) / self.stride)
@@ -176,12 +158,8 @@ class DatasetWholeScene:
             np.ceil(float(coord_max[1] - coord_min[1] - self.block_size) / self.stride)
             + 1
         )
-        data_room, label_room, sample_weight, index_room = (
-            np.array([]),
-            np.array([]),
-            np.array([]),
-            np.array([]),
-        )
+        data_room = np.array([])
+
         for index_y in range(0, grid_y):
             for index_x in range(0, grid_x):
                 s_x = coord_min[0] + index_x * self.stride
@@ -217,32 +195,14 @@ class DatasetWholeScene:
                 data_batch[:, 1] = data_batch[:, 1] - (s_y + self.block_size / 2.0)
                 data_batch[:, 3:6] /= 255.0
                 data_batch = np.concatenate((data_batch, normlized_xyz), axis=1)
-                label_batch = labels[point_idxs].astype(int)
-                batch_weight = self.labelweights[label_batch]
 
                 data_room = (
                     np.vstack([data_room, data_batch]) if data_room.size else data_batch
                 )
-                label_room = (
-                    np.hstack([label_room, label_batch])
-                    if label_room.size
-                    else label_batch
-                )
-                sample_weight = (
-                    np.hstack([sample_weight, batch_weight])
-                    if label_room.size
-                    else batch_weight
-                )
-                index_room = (
-                    np.hstack([index_room, point_idxs])
-                    if index_room.size
-                    else point_idxs
-                )
+                
         data_room = data_room.reshape((-1, self.block_points, data_room.shape[1]))
-        label_room = label_room.reshape((-1, self.block_points))
-        sample_weight = sample_weight.reshape((-1, self.block_points))
-        index_room = index_room.reshape((-1, self.block_points))
-        return data_room, label_room, sample_weight, index_room
+        
+        return data_room
 
     def __len__(self):
         return len(self.scene_points_list)

@@ -90,6 +90,18 @@ def make_pcd(npy_path, color_mode="rgb"):
     )
     return pcd, labels, points
 
+def make_pcd_from_numpy(data, color_mode="rgb"):
+    pc = data[:, :3]
+    rgb = data[:, 3:6]
+    labels = data[:, 6].astype(int)
+
+    pcd = o3d.geometry.PointCloud()
+    pcd.points = o3d.utility.Vector3dVector(pc)
+    pcd.colors = o3d.utility.Vector3dVector(
+        CLASS_COLORS[labels] if color_mode == "label" else rgb
+    )
+    return pcd, labels, pc
+
 
 def print_room_info(npy_path, color_mode, n_points, labels):
     room_name = os.path.splitext(os.path.basename(npy_path))[0]

@@ -1,11 +1,10 @@
 """
 Author: Benny
 Date: Nov 2019
-"""
 Wrapper kept for backward compatibility.
 Delegates to examples.original.sem_seg.train
-"""
 
+"""
 from examples.original.sem_seg.train import main, parse_args
 
 

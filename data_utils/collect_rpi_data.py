@@ -1,7 +1,5 @@
 import os
-import sys
 import numpy as np
-import open3d as o3d
 import glob
 import colorsys
 
