@@ -2,21 +2,11 @@ import os
 import numpy as np
 import glob
 import colorsys
-
-ROOT = "data/rpi_custom_dataset_01_raw"
-classes = [x.rstrip() for x in open(os.path.join(ROOT, "classes.txt"))]
-class2labels = {cls: i for i,cls in enumerate(classes)}
-class_colors = []
-n = len(classes)
-for i, name in enumerate(classes):
-    hue = i / n
-    rgb = colorsys.hsv_to_rgb(hue, 0.9, 0.9)
-    class_colors.append([c for c in rgb])
-class_colors = np.array(class_colors)
+import zipfile
 
 def collect_points_labels(anno_dir):
     points_list = []
-    for f in glob.glob(os.path.join(anno_dir, "*.txt")):
+    for f in glob.glob(os.path.join(anno_dir, "*.xyz")):
         cls = os.path.basename(f).rsplit("_", 1)[0]
         print(f)
         if cls not in classes:
@@ -32,9 +22,37 @@ def collect_points_labels(anno_dir):
     return data
 
 if __name__ == "__main__":
+    ROOT = "rpi_data_raw"
+
+    zip_file_dir = "zips"
+    zip_files = os.listdir(zip_file_dir)
+    for zip_file in zip_files:
+        print(f"Unzipping: {zip_file}")
+        zip_file_path = os.path.join(zip_file_dir, zip_file)
+        with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
+            zip_ref.extractall(ROOT)
+    classes = []
+    scenes = os.listdir(ROOT)
+    for scene in scenes:
+        anno_dir = os.path.join(ROOT,scene, "_PointOut")
+        anno = os.listdir(anno_dir)
+        for a in anno:
+            if ".xyz" in a:
+                cls = a.rsplit("_", 1)[0]
+                if cls not in classes:
+                    classes.append(cls)
+    n = len(classes)
+    class2labels = {cls: i for i, cls in enumerate(classes)}
+    class_colors = []
+    for i, name in enumerate(classes):
+        hue = i / n
+        rgb = colorsys.hsv_to_rgb(hue, 0.9, 0.9)
+        class_colors.append([c for c in rgb])
+    class_colors = np.array(class_colors)
+
     for scene_dir in os.listdir(ROOT):
         print(f"Processing Scene: {scene_dir}")
-        anno_dir = os.path.join(ROOT,scene_dir, "Annotations")
+        anno_dir = os.path.join(ROOT,scene_dir, "_PointOut")
         anno = os.listdir(anno_dir)
         print(f"Number of Annotations: {len(anno)}")
 
