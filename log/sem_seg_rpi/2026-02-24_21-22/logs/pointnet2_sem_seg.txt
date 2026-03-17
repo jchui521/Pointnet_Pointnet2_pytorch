@@ -1,0 +1,158 @@
+2026-02-24 21:22:54,366 - Model - INFO - PARAMETER ...
+2026-02-24 21:22:54,366 - Model - INFO - Namespace(model='pointnet2_sem_seg', batch_size=16, epoch=32, learning_rate=0.001, gpu='0', optimizer='Adam', log_dir=None, decay_rate=0.0001, npoint=4096, step_size=10, lr_decay=0.7, num_workers=4)
+2026-02-24 21:22:55,135 - Model - INFO - The number of training data is: 3
+2026-02-24 21:22:55,135 - Model - INFO - The number of test data is: 3
+2026-02-24 21:22:55,135 - Model - INFO - The length of trainloader is : 1
+2026-02-24 21:22:55,135 - Model - INFO - The length of testlader is : 1
+2026-02-24 21:22:55,159 - Model - INFO - No existing model, starting training from scratch...
+2026-02-24 21:22:55,974 - Model - INFO - **** Epoch 1 (1/32) ****
+2026-02-24 21:22:55,974 - Model - INFO - Learning rate:0.001000
+2026-02-24 21:22:57,060 - Model - INFO - Training mean loss: 3.112015
+2026-02-24 21:22:57,060 - Model - INFO - Training accuracy: 0.010452
+2026-02-24 21:22:57,060 - Model - INFO - Save model...
+2026-02-24 21:22:57,060 - Model - INFO - Saving at log/sem_seg_rpi/2026-02-24_21-22/checkpoints/model.pth
+2026-02-24 21:22:57,096 - Model - INFO - Saving model....
+2026-02-24 21:22:57,097 - Model - INFO - ---- EPOCH 001 EVALUATION ----
+2026-02-24 21:22:57,672 - Model - INFO - eval mean loss: 3.027776
+2026-02-24 21:22:57,672 - Model - INFO - eval point avg class IoU: 0.002635
+2026-02-24 21:22:57,672 - Model - INFO - eval point accuracy: 0.010376
+2026-02-24 21:22:57,673 - Model - INFO - eval point avg class acc: 0.047619
+2026-02-24 21:22:57,673 - Model - INFO - ------- IoU --------
+class Elbow          weight: 0.000, IoU: 0.000 
+class Stairs         weight: 0.203, IoU: nan 
+class Mechanical_Equipment weight: 0.000, IoU: 0.000 
+class Conduit_Elbow  weight: 0.183, IoU: nan 
+class Duct           weight: 0.000, IoU: 0.000 
+class HSS_Channel    weight: 0.003, IoU: nan 
+class Wall           weight: 0.000, IoU: 0.000 
+class Electrical_Equipment weight: 0.041, IoU: nan 
+class Conduit        weight: 0.000, IoU: nan 
+class Light          weight: 0.000, IoU: 0.000 
+class Reducer        weight: 0.066, IoU: nan 
+class Valve          weight: 0.000, IoU: 0.000 
+class Pipe           weight: 0.008, IoU: 0.000 
+class Transition     weight: 0.226, IoU: 0.055 
+class Floor          weight: 0.055, IoU: nan 
+class Receptacle     weight: 0.000, IoU: nan 
+class Tee            weight: 0.000, IoU: 0.000 
+class Pressure_Gauge weight: 0.094, IoU: nan 
+class Mullion        weight: 0.000, IoU: nan 
+class Coupling       weight: 0.000, IoU: 0.000 
+class C_Channel      weight: 0.121, IoU: nan 
+
+2026-02-24 21:22:57,673 - Model - INFO - Eval mean loss: 3.027776
+2026-02-24 21:22:57,674 - Model - INFO - Eval accuracy: 0.010376
+2026-02-24 21:22:57,674 - Model - INFO - Save model...
+2026-02-24 21:22:57,674 - Model - INFO - Saving at log/sem_seg_rpi/2026-02-24_21-22/checkpoints/best_model.pth
+2026-02-24 21:22:57,725 - Model - INFO - Saving model....
+2026-02-24 21:22:57,725 - Model - INFO - Best mIoU: 0.002635
+2026-02-24 21:22:57,725 - Model - INFO - **** Epoch 2 (2/32) ****
+2026-02-24 21:22:57,725 - Model - INFO - Learning rate:0.001000
+2026-02-24 21:22:58,121 - Model - INFO - Training mean loss: 3.146427
+2026-02-24 21:22:58,121 - Model - INFO - Training accuracy: 0.011230
+2026-02-24 21:22:58,121 - Model - INFO - ---- EPOCH 002 EVALUATION ----
+2026-02-24 21:22:58,694 - Model - INFO - eval mean loss: 3.056758
+2026-02-24 21:22:58,694 - Model - INFO - eval point avg class IoU: 0.000000
+2026-02-24 21:22:58,694 - Model - INFO - eval point accuracy: 0.000000
+2026-02-24 21:22:58,694 - Model - INFO - eval point avg class acc: 0.000000
+2026-02-24 21:22:58,695 - Model - INFO - ------- IoU --------
+class Elbow          weight: 0.027, IoU: 0.000 
+class Stairs         weight: 0.331, IoU: 0.000 
+class Mechanical_Equipment weight: 0.003, IoU: 0.000 
+class Conduit_Elbow  weight: 0.087, IoU: 0.000 
+class Duct           weight: 0.008, IoU: 0.000 
+class HSS_Channel    weight: 0.028, IoU: 0.000 
+class Wall           weight: 0.041, IoU: nan 
+class Electrical_Equipment weight: 0.000, IoU: 0.000 
+class Conduit        weight: 0.189, IoU: 0.000 
+class Light          weight: 0.000, IoU: nan 
+class Reducer        weight: 0.000, IoU: 0.000 
+class Valve          weight: 0.050, IoU: nan 
+class Pipe           weight: 0.000, IoU: nan 
+class Transition     weight: 0.000, IoU: 0.000 
+class Floor          weight: 0.077, IoU: 0.000 
+class Receptacle     weight: 0.007, IoU: 0.000 
+class Tee            weight: 0.003, IoU: 0.000 
+class Pressure_Gauge weight: 0.148, IoU: nan 
+class Mullion        weight: 0.000, IoU: nan 
+class Coupling       weight: 0.000, IoU: nan 
+class C_Channel      weight: 0.000, IoU: 0.000 
+
+2026-02-24 21:22:58,695 - Model - INFO - Eval mean loss: 3.056758
+2026-02-24 21:22:58,695 - Model - INFO - Eval accuracy: 0.000000
+2026-02-24 21:22:58,695 - Model - INFO - Best mIoU: 0.002635
+2026-02-24 21:22:58,695 - Model - INFO - **** Epoch 3 (3/32) ****
+2026-02-24 21:22:58,695 - Model - INFO - Learning rate:0.001000
+2026-02-24 21:22:59,140 - Model - INFO - Training mean loss: 3.112147
+2026-02-24 21:22:59,140 - Model - INFO - Training accuracy: 0.009476
+2026-02-24 21:22:59,140 - Model - INFO - ---- EPOCH 003 EVALUATION ----
+2026-02-24 21:22:59,732 - Model - INFO - eval mean loss: 3.030616
+2026-02-24 21:22:59,732 - Model - INFO - eval point avg class IoU: 0.000000
+2026-02-24 21:22:59,733 - Model - INFO - eval point accuracy: 0.000000
+2026-02-24 21:22:59,733 - Model - INFO - eval point avg class acc: 0.000000
+2026-02-24 21:22:59,733 - Model - INFO - ------- IoU --------
+class Elbow          weight: 0.000, IoU: 0.000 
+class Stairs         weight: 0.131, IoU: 0.000 
+class Mechanical_Equipment weight: 0.005, IoU: 0.000 
+class Conduit_Elbow  weight: 0.051, IoU: 0.000 
+class Duct           weight: 0.070, IoU: 0.000 
+class HSS_Channel    weight: 0.008, IoU: nan 
+class Wall           weight: 0.000, IoU: nan 
+class Electrical_Equipment weight: 0.000, IoU: nan 
+class Conduit        weight: 0.000, IoU: 0.000 
+class Light          weight: 0.000, IoU: nan 
+class Reducer        weight: 0.000, IoU: 0.000 
+class Valve          weight: 0.017, IoU: nan 
+class Pipe           weight: 0.000, IoU: nan 
+class Transition     weight: 0.000, IoU: 0.000 
+class Floor          weight: 0.121, IoU: nan 
+class Receptacle     weight: 0.000, IoU: 0.000 
+class Tee            weight: 0.001, IoU: 0.000 
+class Pressure_Gauge weight: 0.590, IoU: 0.000 
+class Mullion        weight: 0.005, IoU: nan 
+class Coupling       weight: 0.000, IoU: nan 
+class C_Channel      weight: 0.000, IoU: nan 
+
+2026-02-24 21:22:59,733 - Model - INFO - Eval mean loss: 3.030616
+2026-02-24 21:22:59,733 - Model - INFO - Eval accuracy: 0.000000
+2026-02-24 21:22:59,733 - Model - INFO - Best mIoU: 0.002635
+2026-02-24 21:22:59,733 - Model - INFO - **** Epoch 4 (4/32) ****
+2026-02-24 21:22:59,733 - Model - INFO - Learning rate:0.001000
+2026-02-24 21:23:00,166 - Model - INFO - Training mean loss: 3.036725
+2026-02-24 21:23:00,166 - Model - INFO - Training accuracy: 0.018600
+2026-02-24 21:23:00,166 - Model - INFO - ---- EPOCH 004 EVALUATION ----
+2026-02-24 21:23:00,724 - Model - INFO - eval mean loss: 3.005052
+2026-02-24 21:23:00,724 - Model - INFO - eval point avg class IoU: 0.000000
+2026-02-24 21:23:00,724 - Model - INFO - eval point accuracy: 0.000000
+2026-02-24 21:23:00,724 - Model - INFO - eval point avg class acc: 0.000000
+2026-02-24 21:23:00,725 - Model - INFO - ------- IoU --------
+class Elbow          weight: 0.000, IoU: 0.000 
+class Stairs         weight: 0.510, IoU: 0.000 
+class Mechanical_Equipment weight: 0.017, IoU: 0.000 
+class Conduit_Elbow  weight: 0.223, IoU: 0.000 
+class Duct           weight: 0.001, IoU: 0.000 
+class HSS_Channel    weight: 0.011, IoU: nan 
+class Wall           weight: 0.000, IoU: nan 
+class Electrical_Equipment weight: 0.000, IoU: nan 
+class Conduit        weight: 0.000, IoU: 0.000 
+class Light          weight: 0.000, IoU: nan 
+class Reducer        weight: 0.000, IoU: 0.000 
+class Valve          weight: 0.003, IoU: nan 
+class Pipe           weight: 0.000, IoU: 0.000 
+class Transition     weight: 0.163, IoU: 0.000 
+class Floor          weight: 0.057, IoU: nan 
+class Receptacle     weight: 0.000, IoU: nan 
+class Tee            weight: 0.000, IoU: nan 
+class Pressure_Gauge weight: 0.000, IoU: nan 
+class Mullion        weight: 0.000, IoU: nan 
+class Coupling       weight: 0.000, IoU: 0.000 
+class C_Channel      weight: 0.014, IoU: nan 
+
+2026-02-24 21:23:00,725 - Model - INFO - Eval mean loss: 3.005052
+2026-02-24 21:23:00,725 - Model - INFO - Eval accuracy: 0.000000
+2026-02-24 21:23:00,725 - Model - INFO - Best mIoU: 0.002635
+2026-02-24 21:23:00,725 - Model - INFO - **** Epoch 5 (5/32) ****
+2026-02-24 21:23:00,725 - Model - INFO - Learning rate:0.001000
+2026-02-24 21:23:01,152 - Model - INFO - Training mean loss: 2.745342
+2026-02-24 21:23:01,152 - Model - INFO - Training accuracy: 0.035828
+2026-02-24 21:23:01,153 - Model - INFO - ---- EPOCH 005 EVALUATION ----

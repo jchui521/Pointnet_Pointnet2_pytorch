@@ -210,8 +210,8 @@ class DatasetWholeScene:
 
 
 if __name__ == "__main__":
-    data_root = "data/rpi_data"
-    num_point, test_area, block_size, sample_rate, num_classes = 4096, 5, 1.0, 0.01, 21
+    data_root = "/home/nvidia/Pointnet_Pointnet2_pytorch/rpi_data"
+    num_point, block_size, sample_rate, num_classes = 4096, 1.0, 0.01, 21
 
     # point_data = PointNetDataset(
     #     split="train",

@@ -22,25 +22,39 @@ def collect_points_labels(anno_dir):
     return data
 
 if __name__ == "__main__":
-    ROOT = "rpi_data_raw"
+    ROOT = "/home/nvidia/Pointnet_Pointnet2_pytorch/rpi_data_raw"
+    if not os.path.exists(ROOT):
+        os.mkdir(ROOT)
 
-    zip_file_dir = "zips"
-    zip_files = os.listdir(zip_file_dir)
-    for zip_file in zip_files:
-        print(f"Unzipping: {zip_file}")
-        zip_file_path = os.path.join(zip_file_dir, zip_file)
-        with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
-            zip_ref.extractall(ROOT)
+    output_dir = "/home/nvidia/Pointnet_Pointnet2_pytorch/rpi_data"
+    if not os.path.exists(output_dir):
+        os.mkdir(output_dir)
+
+    #zip_file_dir = "/home/nvidia/zips"
+    #zip_files = os.listdir(zip_file_dir)
+    #for zip_file in zip_files:
+    #    print(f"Unzipping: {zip_file}")
+    #    zip_file_path = os.path.join(zip_file_dir, zip_file)
+    #    with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
+    #        zip_ref.extractall(ROOT)
+    
     classes = []
     scenes = os.listdir(ROOT)
     for scene in scenes:
-        anno_dir = os.path.join(ROOT,scene, "_PointOut")
-        anno = os.listdir(anno_dir)
-        for a in anno:
-            if ".xyz" in a:
-                cls = a.rsplit("_", 1)[0]
-                if cls not in classes:
-                    classes.append(cls)
+        if os.path.isdir(scene):
+            anno_dir = os.path.join(ROOT,scene, "_PointOut")
+            anno = os.listdir(anno_dir)
+            for a in anno:
+                if ".xyz" in a:
+                    cls = a.rsplit("_", 1)[0]
+                    if cls not in classes:
+                        classes.append(cls)
+
+    class_file = os.path.join(ROOT, "classes.txt")
+    with open(class_file, "w") as file:
+        for cls in classes:
+            file.write(cls + "\n")
+
     n = len(classes)
     class2labels = {cls: i for i, cls in enumerate(classes)}
     class_colors = []
@@ -57,8 +71,8 @@ if __name__ == "__main__":
         print(f"Number of Annotations: {len(anno)}")
 
         data = collect_points_labels(anno_dir)
-
-        out_file = os.path.join(ROOT, "scene_1.npy")
+        
+        out_file = os.path.join(output_dir, scene_dir+".npy")
 
         np.save(out_file, data)
         print(f"Saved as: {out_file}")
