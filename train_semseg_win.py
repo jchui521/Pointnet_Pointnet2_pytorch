@@ -25,27 +25,14 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = BASE_DIR
 sys.path.append(os.path.join(ROOT_DIR, "models"))
 
-classes = [
-    "ceiling",
-    "floor",
-    "wall",
-    "beam",
-    "column",
-    "window",
-    "door",
-    "table",
-    "chair",
-    "sofa",
-    "bookcase",
-    "board",
-    "clutter",
-]
+class_file = "classes.txt"
+with open(class_file, "r") as f:
+    classes = [line.strip() for line in f.readlines()]
 class2label = {cls: i for i, cls in enumerate(classes)}
 seg_classes = class2label
 seg_label_to_cat = {}
 for i, cat in enumerate(seg_classes.keys()):
     seg_label_to_cat[i] = cat
-
 
 def inplace_relu(m):
     classname = m.__class__.__name__
@@ -157,8 +144,8 @@ def main(args):
     log_string("PARAMETER ...")
     log_string(args)
 
-    root = "data/stanford_indoor3d/"
-    NUM_CLASSES = 13
+    root = "rpi_data"
+    NUM_CLASSES = 47
     NUM_POINT = args.npoint
     BATCH_SIZE = args.batch_size
 
@@ -167,7 +154,6 @@ def main(args):
         split="train",
         data_root=root,
         num_point=NUM_POINT,
-        test_area=args.test_area,
         block_size=1.0,
         sample_rate=1.0,
         transform=None,
@@ -177,7 +163,6 @@ def main(args):
         split="test",
         data_root=root,
         num_point=NUM_POINT,
-        test_area=args.test_area,
         block_size=1.0,
         sample_rate=1.0,
         transform=None,

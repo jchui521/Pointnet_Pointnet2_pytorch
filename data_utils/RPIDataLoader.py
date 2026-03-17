@@ -3,6 +3,7 @@ import os
 import numpy as np
 from torch.utils.data import Dataset
 from tqdm import tqdm
+import provider
 
 # import provider
 
@@ -111,8 +112,8 @@ class PointNetDataset(Dataset):
                 current_points, current_labels
             )
 
-        # if self.split == "train":
-        #     points[:, :, :3] = provider.rotate_point_cloud_z(points[:, :, :3])
+        if self.split == "train":
+            points[:, :, :3] = provider.rotate_point_cloud_z(points[:, :, :3])
 
         return current_points, current_labels
 
@@ -210,33 +211,32 @@ class DatasetWholeScene:
 
 
 if __name__ == "__main__":
-    data_root = "/home/nvidia/Pointnet_Pointnet2_pytorch/rpi_data"
-    num_point, block_size, sample_rate, num_classes = 4096, 1.0, 0.01, 21
+    data_root = "rpi_data"
+    num_point, block_size, sample_rate, num_classes = 4096, 1.0, 0.01, 47
 
-    # point_data = PointNetDataset(
-    #     split="train",
-    #     data_root=data_root,
-    #     num_point=num_point,
-    #     num_classes=num_classes,
-    #     test_area=test_area,
-    #     block_size=block_size,
-    #     sample_rate=sample_rate,
-    #     transform=None,
-    # )
-
-    # print("point data size:", point_data.__len__())
-    # print("point data 0 shape:", point_data.__getitem__(0)[0].shape)
-    # print("point label 0 shape:", point_data.__getitem__(0)[1].shape)
-    
-    point_data = DatasetWholeScene(
-        root=data_root,
-        block_points=num_point,
+    point_data = PointNetDataset(
+        # split="train",
+        data_root=data_root,
+        num_point=num_point,
         num_classes=num_classes,
         block_size=block_size,
+        sample_rate=sample_rate,
+        transform=None,
     )
 
     print("point data size:", point_data.__len__())
     print("point data 0 shape:", point_data.__getitem__(0)[0].shape)
     print("point label 0 shape:", point_data.__getitem__(0)[1].shape)
+    
+    # point_data = DatasetWholeScene(
+    #     root=data_root,
+    #     block_points=num_point,
+    #     num_classes=num_classes,
+    #     block_size=block_size,
+    # )
+
+    # print("point data size:", point_data.__len__())
+    # print("point data 0 shape:", point_data.__getitem__(0)[0].shape)
+    # print("point label 0 shape:", point_data.__getitem__(0)[1].shape)
 
 
