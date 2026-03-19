@@ -179,6 +179,7 @@ def main(args):
         drop_last=True,
         persistent_workers=True if args.num_workers > 0 else False,
         worker_init_fn=lambda x: np.random.seed(x + int(time.time())),
+        multiprocessing_context='spawn' if args.num_workers > 0 else None,
     )
     testDataLoader = torch.utils.data.DataLoader(
         TEST_DATASET,
@@ -187,6 +188,7 @@ def main(args):
         num_workers=args.num_workers,
         pin_memory=True,
         drop_last=True,
+        multiprocessing_context='spawn' if args.num_workers > 0 else None,
     )
     weights = torch.Tensor(TRAIN_DATASET.labelweights).cuda()
 
