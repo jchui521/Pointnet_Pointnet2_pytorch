@@ -21,6 +21,10 @@ from tqdm import tqdm
 import provider
 from data_utils.RPIDataLoader import PointNetDataset
 
+import multiprocessing
+
+multiprocessing.set_start_method("fork")
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = BASE_DIR
 sys.path.append(os.path.join(ROOT_DIR, "models"))
