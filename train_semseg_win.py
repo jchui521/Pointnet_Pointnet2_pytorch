@@ -19,7 +19,7 @@ import torch
 from tqdm import tqdm
 
 import provider
-from data_utils.S3DISDataLoader import S3DISDataset
+from data_utils.RPIDataLoader import PointNetDataset
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = BASE_DIR
@@ -64,7 +64,7 @@ def parse_args():
         help="Initial learning rate [default: 0.001]",
     )
     parser.add_argument(
-        "--gpu", type=str, default="0,1,2,3,4,5,6,7", help="GPU to use [default: GPU 0]"
+        "--gpu", type=str, default="0", help="GPU to use [default: GPU 0]"
     )
     parser.add_argument(
         "--optimizer", type=str, default="Adam", help="Adam or SGD [default: Adam]"
@@ -99,7 +99,7 @@ def parse_args():
     parser.add_argument(
         "--num_workers",
         type=int,
-        default=24,
+        default=0,
         help="Number of workers for data loading [default: 0 for Windows, should increase to 16 or 24 when running on VMs]",
     )
 
@@ -118,7 +118,7 @@ def main(args):
     timestr = str(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M"))
     experiment_dir = Path("./log/")
     experiment_dir.mkdir(exist_ok=True)
-    experiment_dir = experiment_dir.joinpath("sem_seg")
+    experiment_dir = experiment_dir.joinpath("sem_seg_rpi")
     experiment_dir.mkdir(exist_ok=True)
     if args.log_dir is None:
         experiment_dir = experiment_dir.joinpath(timestr)
@@ -150,19 +150,21 @@ def main(args):
     BATCH_SIZE = args.batch_size
 
     print("start loading training data ...")
-    TRAIN_DATASET = S3DISDataset(
+    TRAIN_DATASET = PointNetDataset(
         split="train",
         data_root=root,
         num_point=NUM_POINT,
+        num_classes=NUM_CLASSES,
         block_size=1.0,
         sample_rate=1.0,
         transform=None,
     )
     print("start loading test data ...")
-    TEST_DATASET = S3DISDataset(
+    TEST_DATASET = PointNetDataset(
         split="test",
         data_root=root,
         num_point=NUM_POINT,
+        num_classes=NUM_CLASSES,
         block_size=1.0,
         sample_rate=1.0,
         transform=None,
@@ -175,7 +177,7 @@ def main(args):
         num_workers=args.num_workers,
         pin_memory=True,
         drop_last=True,
-        persistent_workers=True,
+        persistent_workers=True if args.num_workers > 0 else False,
         worker_init_fn=lambda x: np.random.seed(x + int(time.time())),
     )
     testDataLoader = torch.utils.data.DataLoader(

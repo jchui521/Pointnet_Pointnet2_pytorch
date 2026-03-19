@@ -30,27 +30,8 @@ except ImportError:
 #     "door", "table", "chair", "sofa", "bookcase", "board", "clutter",
 # ]
 
-CLASS_NAMES = ['Elbow',
- 'Stairs',
- 'Mechanical_Equipment',
- 'Conduit_Elbow',
- 'Duct',
- 'HSS_Channel',
- 'Wall',
- 'Electrical_Equipment',
- 'Conduit',
- 'Light',
- 'Reducer',
- 'Valve',
- 'Pipe',
- 'Transition',
- 'Floor',
- 'Receptacle',
- 'Tee',
- 'Pressure_Gauge',
- 'Mullion',
- 'Coupling',
- 'C_Channel']
+with open("classes.txt", "r") as f:
+    CLASS_NAMES = [line.strip() for line in f.readlines()]
 
 # # Distinct colors per class (RGB 0-1)
 # CLASS_COLORS = np.array([

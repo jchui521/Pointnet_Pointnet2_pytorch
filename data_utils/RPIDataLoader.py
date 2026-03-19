@@ -3,7 +3,8 @@ import os
 import numpy as np
 from torch.utils.data import Dataset
 from tqdm import tqdm
-import provider
+
+from torch.utils.data import DataLoader
 
 # import provider
 
@@ -58,8 +59,11 @@ class PointNetDataset(Dataset):
             num_point_all.append(labels.size)
         labelweights = labelweights.astype(np.float32)
         labelweights = labelweights / np.sum(labelweights)
-        self.labelweights = np.power(np.amax(labelweights) / labelweights, 1 / 3.0)
-        print(self.labelweights)
+        self.labelweights = np.where(
+            labelweights == 0,
+            0.0,
+            np.power(np.amax(labelweights) / labelweights, 1 / 3.0)
+        )
         sample_prob = num_point_all / np.sum(num_point_all)
         num_iter = int(np.sum(num_point_all) * sample_rate / num_point)
         room_idxs = []
@@ -112,8 +116,8 @@ class PointNetDataset(Dataset):
                 current_points, current_labels
             )
 
-        if self.split == "train":
-            points[:, :, :3] = provider.rotate_point_cloud_z(points[:, :, :3])
+        # if self.split == "train":
+            # points[:, :, :3] = provider.rotate_point_cloud_z(points[:, :, :3])
 
         return current_points, current_labels
 
@@ -211,11 +215,12 @@ class DatasetWholeScene:
 
 
 if __name__ == "__main__":
-    data_root = "rpi_data"
+    # data_root = "rpi_data"
+    data_root = "data/rpi_data"
     num_point, block_size, sample_rate, num_classes = 4096, 1.0, 0.01, 47
 
     point_data = PointNetDataset(
-        # split="train",
+        split="train",
         data_root=data_root,
         num_point=num_point,
         num_classes=num_classes,
@@ -227,6 +232,16 @@ if __name__ == "__main__":
     print("point data size:", point_data.__len__())
     print("point data 0 shape:", point_data.__getitem__(0)[0].shape)
     print("point label 0 shape:", point_data.__getitem__(0)[1].shape)
+
+    data_loader = DataLoader(
+        point_data,
+        batch_size=16,
+        shuffle=True,
+    )
+
+    print("---------")
+    print("data_loader size:", len(data_loader))
+    print("data_loader 0 shape:", data_loader.dataset.__getitem__(0)[0].shape)
     
     # point_data = DatasetWholeScene(
     #     root=data_root,
