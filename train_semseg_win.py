@@ -110,6 +110,10 @@ def parse_args():
     return parser.parse_args()
 
 
+def worker_init_fn(worker_id):
+    np.random.seed(worker_id + int(time.time()))
+
+
 def main(args):
     def log_string(str):
         logger.info(str)
@@ -182,7 +186,7 @@ def main(args):
         pin_memory=True,
         drop_last=True,
         persistent_workers=True if args.num_workers > 0 else False,
-        worker_init_fn=lambda x: np.random.seed(x + int(time.time())),
+        worker_init_fn=worker_init_fn,
         multiprocessing_context='spawn' if args.num_workers > 0 else None,
     )
     testDataLoader = torch.utils.data.DataLoader(
