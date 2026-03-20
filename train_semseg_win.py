@@ -21,7 +21,9 @@ from tqdm import tqdm
 import provider
 from data_utils.RPIDataLoader import PointNetDataset
 
+import multiprocessing
 
+multiprocessing.set_start_method("fork")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = BASE_DIR
@@ -286,23 +288,18 @@ def main(args):
         loss_sum = 0
         classifier = classifier.train()
 
-        print("start training")
         for i, (points, target) in tqdm(
             enumerate(trainDataLoader), total=len(trainDataLoader), smoothing=0.9
         ):
-            print("optimizer zero")
             optimizer.zero_grad()
 
             # points = points.data.numpy()
             # points[:, :, :3] = provider.rotate_point_cloud_z(points[:, :, :3])
             # points = torch.Tensor(points)
 
-            print("move to cuda")
             points, target = points.float().cuda(), target.long().cuda()
-            print("transpose")
             points = points.transpose(2, 1)
 
-            print("forward")
             seg_pred, trans_feat = classifier(points)
             seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
 
