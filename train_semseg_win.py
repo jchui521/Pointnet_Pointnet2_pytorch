@@ -67,7 +67,7 @@ def parse_args():
         help="Initial learning rate [default: 0.001]",
     )
     parser.add_argument(
-        "--gpu", type=str, default="0", help="GPU to use [default: GPU 0]"
+        "--gpu", type=str, default="0,1,2,3,4,5,6,7", help="GPUs to use [default: all 8]"
     )
     parser.add_argument(
         "--optimizer", type=str, default="Adam", help="Adam or SGD [default: Adam]"
@@ -102,8 +102,8 @@ def parse_args():
     parser.add_argument(
         "--num_workers",
         type=int,
-        default=0,
-        help="Number of workers for data loading [default: 0 for Windows, should increase to 16 or 24 when running on VMs]",
+        default=16,
+        help="Number of workers for data loading [default: 16 for multi-GPU Linux; use 0 on Windows]",
     )
 
     return parser.parse_args()
@@ -120,6 +120,7 @@ def main(args):
 
     """HYPER PARAMETER"""
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+    torch.backends.cudnn.benchmark = True
 
     """CREATE DIR"""
     timestr = str(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M"))
@@ -138,7 +139,6 @@ def main(args):
     log_dir.mkdir(exist_ok=True)
 
     """LOG"""
-    args = parse_args()
     logger = logging.getLogger("Model")
     logger.setLevel(logging.INFO)
     formatter = logging.Formatter(
@@ -250,6 +250,8 @@ def main(args):
             classifier.parameters(), lr=args.learning_rate, momentum=0.9
         )
 
+    scaler = torch.cuda.amp.GradScaler()  # noqa: deprecated alias, works in all PyTorch 2.x
+
     def bn_momentum_adjust(m, momentum):
         if isinstance(m, torch.nn.BatchNorm2d) or isinstance(m, torch.nn.BatchNorm1d):
             m.momentum = momentum
@@ -299,14 +301,17 @@ def main(args):
             points, target = points.float().cuda(), target.long().cuda()
             points = points.transpose(2, 1)
 
-            seg_pred, trans_feat = classifier(points)
-            seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
+            with torch.cuda.amp.autocast():
+                seg_pred, trans_feat = classifier(points)
+                seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
 
-            batch_label = target.view(-1, 1)[:, 0].cpu().data.numpy()
-            target = target.view(-1, 1)[:, 0]
-            loss = criterion(seg_pred, target, trans_feat, weights)
-            loss.backward()
-            optimizer.step()
+                batch_label = target.view(-1, 1)[:, 0].cpu().data.numpy()
+                target = target.view(-1, 1)[:, 0]
+                loss = criterion(seg_pred, target, trans_feat, weights)
+
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
 
             pred_choice = seg_pred.cpu().data.max(1)[1].numpy()
             correct = np.sum(pred_choice == batch_label)
@@ -322,7 +327,9 @@ def main(args):
             log_string("Saving at %s" % savepath)
             state = {
                 "epoch": epoch,
-                "model_state_dict": classifier.state_dict(),
+                "model_state_dict": classifier.module.state_dict()
+                if isinstance(classifier, torch.nn.DataParallel)
+                else classifier.state_dict(),
                 "optimizer_state_dict": optimizer.state_dict(),
             }
             torch.save(state, savepath)
