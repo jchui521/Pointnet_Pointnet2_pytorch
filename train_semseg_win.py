@@ -152,7 +152,7 @@ def main(args):
     log_string(args)
 
     root = "rpi_data"
-    NUM_CLASSES = 47
+    NUM_CLASSES = 48
     NUM_POINT = args.npoint
     BATCH_SIZE = args.batch_size
 
