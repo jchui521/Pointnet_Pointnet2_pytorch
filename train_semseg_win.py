@@ -48,8 +48,8 @@ def parse_args():
     parser.add_argument(
         "--model",
         type=str,
-        default="pointnet_sem_seg",
-        help="model name [default: pointnet_sem_seg]",
+        default="pointnet2_sem_seg",
+        help="model name [default: pointnet2_sem_seg]",
     )
     parser.add_argument(
         "--batch_size",
