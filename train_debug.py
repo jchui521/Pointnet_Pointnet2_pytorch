@@ -65,7 +65,8 @@ weights = torch.Tensor(ds.labelweights).cuda()
 
 classifier = get_model(
     num_classes=NUM_CLASSES,
-)
+).cuda()
+
 criterion = get_loss()
 optimizer = torch.optim.Adam(classifier.parameters(), lr=LR, betas=(0.9, 0.999))
 
