@@ -68,24 +68,43 @@ class PointNetDataset(Dataset):
         num_iter = int(np.sum(num_point_all) * sample_rate / num_point)
 
         self.valid_centers = []
-        for room_idx in tqdm( range(len(rooms_split)) ):
-            print("room {} of {}".format(room_idx, len(rooms_split)))
+        grid_res = 0.1  # 10cm grid resolution for prefix-sum queries
+        for room_idx in tqdm(range(len(rooms_split))):
             points = self.room_points[room_idx]
             N = points.shape[0]
             target = max(1, int(round(sample_prob[room_idx] * num_iter)))
+
+            # Build 2D prefix-sum grid so block-count queries are O(1) instead of O(N)
+            x_min, y_min = points[:, 0].min(), points[:, 1].min()
+            xi = ((points[:, 0] - x_min) / grid_res).astype(np.int32)
+            yi = ((points[:, 1] - y_min) / grid_res).astype(np.int32)
+            x_bins, y_bins = xi.max() + 1, yi.max() + 1
+            grid = np.zeros((x_bins, y_bins), dtype=np.int32)
+            np.add.at(grid, (xi, yi), 1)
+            prefix = grid.cumsum(axis=0).cumsum(axis=1)
+
+            half = self.block_size / 2.0
+
+            def block_count(cx, cy):
+                ix0 = max(0, int((cx - half - x_min) / grid_res))
+                ix1 = min(x_bins - 1, int((cx + half - x_min) / grid_res))
+                iy0 = max(0, int((cy - half - y_min) / grid_res))
+                iy1 = min(y_bins - 1, int((cy + half - y_min) / grid_res))
+                if ix0 > ix1 or iy0 > iy1:
+                    return 0
+                total = prefix[ix1, iy1]
+                if ix0 > 0: total -= prefix[ix0 - 1, iy1]
+                if iy0 > 0: total -= prefix[ix1, iy0 - 1]
+                if ix0 > 0 and iy0 > 0: total += prefix[ix0 - 1, iy0 - 1]
+                return int(total)
+
             batch_size = min(N, max(target * 3, 100))
             candidate_idxs = np.random.choice(N, size=batch_size, replace=N < batch_size)
             found = 0
             for ci in candidate_idxs:
-                center = points[ci, :3]
-                block_min = center - [self.block_size / 2.0, self.block_size / 2.0, 0]
-                block_max = center + [self.block_size / 2.0, self.block_size / 2.0, 0]
-                mask = (
-                    (points[:, 0] >= block_min[0]) & (points[:, 0] <= block_max[0]) &
-                    (points[:, 1] >= block_min[1]) & (points[:, 1] <= block_max[1])
-                )
-                if mask.sum() > 1024:
-                    self.valid_centers.append((room_idx, center))
+                cx, cy = points[ci, 0], points[ci, 1]
+                if block_count(cx, cy) > 1024:
+                    self.valid_centers.append((room_idx, points[ci, :3]))
                     found += 1
                     if found >= target:
                         break
