@@ -53,6 +53,9 @@ ds = PointNetDataset(
     transform=None,
 )
 
+import torch.multiprocessing as mp
+mp.set_sharing_strategy('file_system')
+
 dataloader = torch.utils.data.DataLoader(
     ds,
     batch_size=BATCH_SIZE,
@@ -70,6 +73,11 @@ classifier = get_model(
 
 criterion = get_loss()
 optimizer = torch.optim.Adam(classifier.parameters(), lr=LR, betas=(0.9, 0.999))
+
+print("testing dataloader")
+for batch_id, (points, target) in tqdm(enumerate(dataloader), total=len(dataloader)):
+    pass  # just drain the dataloader, no GPU work
+print("testing passed")
 
 for i in range(EPOCHS):
     loss_sum = 0.0
