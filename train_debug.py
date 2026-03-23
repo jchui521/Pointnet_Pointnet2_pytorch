@@ -72,6 +72,8 @@ optimizer = torch.optim.Adam(classifier.parameters(), lr=LR, betas=(0.9, 0.999))
 
 for i in range(EPOCHS):
     loss_sum = 0.0
+    total_correct = 0
+    total_seen = 0
     for batch_id, (points, target) in enumerate(dataloader):
         optimizer.zero_grad()
 
