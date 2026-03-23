@@ -153,7 +153,7 @@ def main(args):
     log_string(args)
 
     root = "rpi_data"
-    NUM_CLASSES = 48
+    NUM_CLASSES = 47
     NUM_POINT = args.npoint
     BATCH_SIZE = args.batch_size
 
@@ -210,9 +210,9 @@ def main(args):
     criterion = MODEL.get_loss().cuda()
     classifier.apply(inplace_relu)
 
-    # if torch.cuda.device_count() > 1:
-    #     print(f"Using {torch.cuda.device_count()} GPUS")
-    #     classifier = torch.nn.DataParallel(classifier)
+    if torch.cuda.device_count() > 1:
+        print(f"Using {torch.cuda.device_count()} GPUS")
+        classifier = torch.nn.DataParallel(classifier)
 
     def weights_init(m):
         classname = m.__class__.__name__
@@ -251,7 +251,7 @@ def main(args):
             classifier.parameters(), lr=args.learning_rate, momentum=0.9
         )
 
-    # scaler = torch.cuda.amp.GradScaler()  # noqa: deprecated alias, works in all PyTorch 2.x
+    scaler = torch.cuda.amp.GradScaler()  # noqa: deprecated alias, works in all PyTorch 2.x
 
     def bn_momentum_adjust(m, momentum):
         if isinstance(m, torch.nn.BatchNorm2d) or isinstance(m, torch.nn.BatchNorm1d):
@@ -302,26 +302,27 @@ def main(args):
             points, target = points.float().cuda(), target.long().cuda()
             points = points.transpose(2, 1)
 
-            # with torch.cuda.amp.autocast():
-            #     seg_pred, trans_feat = classifier(points)
-            #     seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
+            with torch.autocast(device_type="cuda"):
+                seg_pred, trans_feat = classifier(points)
+                seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
 
-            #     batch_label = target.view(-1, 1)[:, 0].cpu().data.numpy()
-            #     target = target.view(-1, 1)[:, 0]
-            #     loss = criterion(seg_pred, target, trans_feat, weights)
-            seg_pred, trans_feat = classifier(points)
-            seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
+                batch_label = target.view(-1, 1)[:, 0].cpu().data.numpy()
+                target = target.view(-1, 1)[:, 0]
+                loss = criterion(seg_pred, target, trans_feat, weights)
 
-            batch_label = target.view(-1, 1)[:, 0].cpu().data.numpy()
-            target = target.view(-1, 1)[:, 0]
-            loss = criterion(seg_pred, target, trans_feat, weights)
+            # seg_pred, trans_feat = classifier(points)
+            # seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
 
-            # scaler.scale(loss).backward()
-            # scaler.step(optimizer)
-            # scaler.update()
+            # batch_label = target.view(-1, 1)[:, 0].cpu().data.numpy()
+            # target = target.view(-1, 1)[:, 0]
+            # loss = criterion(seg_pred, target, trans_feat, weights)
 
-            loss.backward()
-            optimizer.step()
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
+
+            # loss.backward()
+            # optimizer.step()
 
             pred_choice = seg_pred.cpu().data.max(1)[1].numpy()
             correct = np.sum(pred_choice == batch_label)
@@ -337,8 +338,8 @@ def main(args):
             log_string("Saving at %s" % savepath)
             state = {
                 "epoch": epoch,
-                # "model_state_dict": classifier.module.state_dict() if isinstance(classifier, torch.nn.DataParallel) else classifier.state_dict(),
-                "model_state_dict": classifier.state_dict(),
+                "model_state_dict": classifier.module.state_dict() if isinstance(classifier, torch.nn.DataParallel) else classifier.state_dict(),
+                # "model_state_dict": classifier.state_dict(),
                 "optimizer_state_dict": optimizer.state_dict(),
             }
             torch.save(state, savepath)
@@ -429,8 +430,8 @@ def main(args):
                 state = {
                     "epoch": epoch,
                     "class_avg_iou": mIoU,
-                    # "model_state_dict": classifier.module.state_dict() if isinstance(classifier, torch.nn.DataParallel) else classifier.state_dict(),
-                    "model_state_dict": classifier.state_dict(),
+                    "model_state_dict": classifier.module.state_dict() if isinstance(classifier, torch.nn.DataParallel) else classifier.state_dict(),
+                    # "model_state_dict": classifier.state_dict(),
                     "optimizer_state_dict": optimizer.state_dict(),
                 }
                 torch.save(state, savepath)
