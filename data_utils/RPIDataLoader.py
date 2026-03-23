@@ -66,31 +66,43 @@ class PointNetDataset(Dataset):
         )
         sample_prob = num_point_all / np.sum(num_point_all)
         num_iter = int(np.sum(num_point_all) * sample_rate / num_point)
-        room_idxs = []
-        for index in range(len(rooms_split)):
-            room_idxs.extend([index] * int(round(sample_prob[index] * num_iter)))
-        self.room_idxs = np.array(room_idxs)
-        print("Totally {} samples in {} set.".format(len(self.room_idxs), split))
+
+        self.valid_centers = []
+        for room_idx in range(len(rooms_split)):
+            points = self.room_points[room_idx]
+            N = points.shape[0]
+            target = max(1, int(round(sample_prob[room_idx] * num_iter)))
+            batch_size = min(N, max(target * 3, 100))
+            candidate_idxs = np.random.choice(N, size=batch_size, replace=N < batch_size)
+            found = 0
+            for ci in candidate_idxs:
+                center = points[ci, :3]
+                block_min = center - [self.block_size / 2.0, self.block_size / 2.0, 0]
+                block_max = center + [self.block_size / 2.0, self.block_size / 2.0, 0]
+                mask = (
+                    (points[:, 0] >= block_min[0]) & (points[:, 0] <= block_max[0]) &
+                    (points[:, 1] >= block_min[1]) & (points[:, 1] <= block_max[1])
+                )
+                if mask.sum() > 1024:
+                    self.valid_centers.append((room_idx, center))
+                    found += 1
+                    if found >= target:
+                        break
+        print("Totally {} samples in {} set.".format(len(self.valid_centers), split))
 
     def __getitem__(self, idx):
-        room_idx = self.room_idxs[idx]
+        room_idx, center = self.valid_centers[idx]
         points = self.room_points[room_idx]  # N * 6
         labels = self.room_labels[room_idx]  # N
-        N_points = points.shape[0]
 
-        # while True:
-        for i in range(100):
-            center = points[np.random.choice(N_points)][:3]
-            block_min = center - [self.block_size / 2.0, self.block_size / 2.0, 0]
-            block_max = center + [self.block_size / 2.0, self.block_size / 2.0, 0]
-            point_idxs = np.where(
-                (points[:, 0] >= block_min[0])
-                & (points[:, 0] <= block_max[0])
-                & (points[:, 1] >= block_min[1])
-                & (points[:, 1] <= block_max[1])
-            )[0]
-            if point_idxs.size > 1024:
-                break
+        block_min = center - [self.block_size / 2.0, self.block_size / 2.0, 0]
+        block_max = center + [self.block_size / 2.0, self.block_size / 2.0, 0]
+        point_idxs = np.where(
+            (points[:, 0] >= block_min[0])
+            & (points[:, 0] <= block_max[0])
+            & (points[:, 1] >= block_min[1])
+            & (points[:, 1] <= block_max[1])
+        )[0]
 
         if point_idxs.size >= self.num_point:
             selected_point_idxs = np.random.choice(
@@ -123,7 +135,7 @@ class PointNetDataset(Dataset):
         return current_points, current_labels
 
     def __len__(self):
-        return len(self.room_idxs)
+        return len(self.valid_centers)
 
 class DatasetWholeScene:
     # prepare to give prediction on each points
