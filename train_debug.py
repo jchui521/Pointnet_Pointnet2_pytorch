@@ -30,7 +30,7 @@ seg_label_to_cat = {}
 for i, cat in enumerate(seg_classes.keys()):
     seg_label_to_cat[i] = cat
 
-NUM_WORKERS = 4
+NUM_WORKERS = 32
 BATCH_SIZE = 32
 NUM_POINT = 2048
 DECAY_RATE = 1e-4
