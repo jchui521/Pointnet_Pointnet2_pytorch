@@ -78,7 +78,8 @@ class PointNetDataset(Dataset):
         labels = self.room_labels[room_idx]  # N
         N_points = points.shape[0]
 
-        while True:
+        # while True:
+        for _ in range(100):
             center = points[np.random.choice(N_points)][:3]
             block_min = center - [self.block_size / 2.0, self.block_size / 2.0, 0]
             block_max = center + [self.block_size / 2.0, self.block_size / 2.0, 0]
