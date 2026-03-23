@@ -74,7 +74,7 @@ for i in range(EPOCHS):
     loss_sum = 0.0
     total_correct = 0
     total_seen = 0
-    for batch_id, (points, target) in enumerate(dataloader):
+    for batch_id, (points, target) in tqdm(enumerate(dataloader)):
         optimizer.zero_grad()
 
         points, target = points.float().cuda(), target.long().cuda()
