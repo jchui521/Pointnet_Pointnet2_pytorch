@@ -39,7 +39,7 @@ STEP_SIZE = 10
 LR = 0.001
 NUM_CLASSES = 47
 EPOCHS = 32
-SAMPLE_RATE = 0.1
+SAMPLE_RATE = 0.05
 
 data_root = "rpi_data"
 
