@@ -68,14 +68,15 @@ class PointNetDataset(Dataset):
         num_iter = int(np.sum(num_point_all) * sample_rate / num_point)
 
         self.valid_centers = []
-        for room_idx in tqdm( range(len(rooms_split)) ):
+        for room_idx in range(len(rooms_split)):
+            print("room {} of {}".format(room_idx, len(rooms_split)))
             points = self.room_points[room_idx]
             N = points.shape[0]
             target = max(1, int(round(sample_prob[room_idx] * num_iter)))
             batch_size = min(N, max(target * 3, 100))
             candidate_idxs = np.random.choice(N, size=batch_size, replace=N < batch_size)
             found = 0
-            for ci in candidate_idxs:
+            for ci in tqdm( candidate_idxs ):
                 center = points[ci, :3]
                 block_min = center - [self.block_size / 2.0, self.block_size / 2.0, 0]
                 block_max = center + [self.block_size / 2.0, self.block_size / 2.0, 0]

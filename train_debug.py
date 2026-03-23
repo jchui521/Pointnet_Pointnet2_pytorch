@@ -43,7 +43,7 @@ if __name__ == "__main__":
     STEP_SIZE = 10
     LR = 0.001
     NUM_CLASSES = 47
-    EPOCHS = 32
+    EPOCHS = 1
     SAMPLE_RATE = 0.05
 
     data_root = "rpi_data"
@@ -70,36 +70,31 @@ if __name__ == "__main__":
         worker_init_fn=lambda id: np.random.seed(id),
     )
 
-    # weights = torch.Tensor(ds.labelweights).cuda()
+    weights = torch.Tensor(ds.labelweights).cuda()
 
-    # classifier = get_model(
-    #     num_classes=NUM_CLASSES,
-    # ).cuda()
+    classifier = get_model(
+        num_classes=NUM_CLASSES,
+    ).cuda()
 
-    # criterion = get_loss()
-    # optimizer = torch.optim.Adam(classifier.parameters(), lr=LR, betas=(0.9, 0.999))
+    criterion = get_loss()
+    optimizer = torch.optim.Adam(classifier.parameters(), lr=LR, betas=(0.9, 0.999))
 
-    print("testing dataloader")
-    for batch_id, (points, target) in tqdm(enumerate(dataloader), total=len(dataloader)):
-        pass  # just drain the dataloader, no GPU work
-    print("testing passed")
+    for i in range(EPOCHS):
+        loss_sum = 0.0
+        for batch_id, (points, target) in tqdm(enumerate(dataloader), total=len(dataloader)):
+            optimizer.zero_grad()
 
-    # for i in range(EPOCHS):
-    #     loss_sum = 0.0
-    #     for batch_id, (points, target) in tqdm(enumerate(dataloader), total=len(dataloader)):
-    #         optimizer.zero_grad()
+            points, target = points.float().cuda(), target.long().cuda()
+            points = points.transpose(2, 1)
 
-    #         points, target = points.float().cuda(), target.long().cuda()
-    #         points = points.transpose(2, 1)
+            seg_pred, trans_feat = classifier(points)
+            seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
 
-    #         seg_pred, trans_feat = classifier(points)
-    #         seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
+            target = target.view(-1, 1)[:, 0]
+            loss = criterion(seg_pred, target, trans_feat, weights)       
 
-    #         target = target.view(-1, 1)[:, 0]
-    #         loss = criterion(seg_pred, target, trans_feat, weights)       
+            loss.backward()
+            optimizer.step()
 
-    #         loss.backward()
-    #         optimizer.step()
-
-    #         loss_sum += loss
-    #     print(f"Loss: {loss_sum / len(dataloader)}")
+            loss_sum += loss
+        print(f"Loss: {loss_sum / len(dataloader)}")
