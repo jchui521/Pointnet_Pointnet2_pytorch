@@ -35,9 +35,9 @@ if __name__ == "__main__":
     # for i, cat in enumerate(seg_classes.keys()):
     #     seg_label_to_cat[i] = cat
 
-    NUM_WORKERS = 32
-    BATCH_SIZE = 32
-    NUM_POINT = 2048
+    NUM_WORKERS = 4
+    BATCH_SIZE = 64
+    NUM_POINT = 4096
     DECAY_RATE = 1e-4
     LR_DECAY = 0.7
     STEP_SIZE = 10
