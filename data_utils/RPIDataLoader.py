@@ -80,6 +80,7 @@ class PointNetDataset(Dataset):
 
         # while True:
         for _ in range(100):
+            print("Sampling room ... ")
             center = points[np.random.choice(N_points)][:3]
             block_min = center - [self.block_size / 2.0, self.block_size / 2.0, 0]
             block_max = center + [self.block_size / 2.0, self.block_size / 2.0, 0]

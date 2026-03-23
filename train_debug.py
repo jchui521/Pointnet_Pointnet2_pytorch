@@ -17,84 +17,89 @@ from data_utils.RPIDataLoader import PointNetDataset
 
 from models.pointnet2_sem_seg import get_model, get_loss
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-ROOT_DIR = BASE_DIR
-sys.path.append(os.path.join(ROOT_DIR, "models"))
+from multiprocessing import freeze_support
 
-class_file = "classes.txt"
-with open(class_file, "r") as f:
-    classes = [line.strip() for line in f.readlines()]
-class2label = {cls: i for i, cls in enumerate(classes)}
-seg_classes = class2label
-seg_label_to_cat = {}
-for i, cat in enumerate(seg_classes.keys()):
-    seg_label_to_cat[i] = cat
+if __name__ == "__main__":
+    freeze_support()
 
-NUM_WORKERS = 32
-BATCH_SIZE = 32
-NUM_POINT = 2048
-DECAY_RATE = 1e-4
-LR_DECAY = 0.7
-STEP_SIZE = 10
-LR = 0.001
-NUM_CLASSES = 47
-EPOCHS = 32
-SAMPLE_RATE = 0.05
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    ROOT_DIR = BASE_DIR
+    sys.path.append(os.path.join(ROOT_DIR, "models"))
 
-data_root = "rpi_data"
+    # class_file = "classes.txt"
+    # with open(class_file, "r") as f:
+    #     classes = [line.strip() for line in f.readlines()]
+    # class2label = {cls: i for i, cls in enumerate(classes)}
+    # seg_classes = class2label
+    # seg_label_to_cat = {}
+    # for i, cat in enumerate(seg_classes.keys()):
+    #     seg_label_to_cat[i] = cat
 
-ds = PointNetDataset(
-    split="test",
-    data_root=data_root,
-    num_point=NUM_POINT,
-    num_classes=NUM_CLASSES,
-    block_size=1.0,
-    sample_rate=SAMPLE_RATE,
-    transform=None,
-)
+    NUM_WORKERS = 1
+    BATCH_SIZE = 16
+    NUM_POINT = 2048
+    DECAY_RATE = 1e-4
+    LR_DECAY = 0.7
+    STEP_SIZE = 10
+    LR = 0.001
+    NUM_CLASSES = 47
+    EPOCHS = 32
+    SAMPLE_RATE = 0.05
 
-import torch.multiprocessing as mp
-mp.set_sharing_strategy('file_system')
+    data_root = "rpi_data"
 
-dataloader = torch.utils.data.DataLoader(
-    ds,
-    batch_size=BATCH_SIZE,
-    shuffle=False,
-    num_workers=NUM_WORKERS,
-    pin_memory=True,
-    worker_init_fn=lambda id: np.random.seed(id),
-)
+    ds = PointNetDataset(
+        split="test",
+        data_root=data_root,
+        num_point=NUM_POINT,
+        num_classes=NUM_CLASSES,
+        block_size=1.0,
+        sample_rate=SAMPLE_RATE,
+        transform=None,
+    )
 
-weights = torch.Tensor(ds.labelweights).cuda()
+    # import torch.multiprocessing as mp
+    # mp.set_sharing_strategy('file_system')
 
-classifier = get_model(
-    num_classes=NUM_CLASSES,
-).cuda()
+    dataloader = torch.utils.data.DataLoader(
+        ds,
+        batch_size=BATCH_SIZE,
+        shuffle=False,
+        num_workers=NUM_WORKERS,
+        # pin_memory=True,
+        # worker_init_fn=lambda id: np.random.seed(id),
+    )
 
-criterion = get_loss()
-optimizer = torch.optim.Adam(classifier.parameters(), lr=LR, betas=(0.9, 0.999))
+    # weights = torch.Tensor(ds.labelweights).cuda()
 
-print("testing dataloader")
-for batch_id, (points, target) in tqdm(enumerate(dataloader), total=len(dataloader)):
-    pass  # just drain the dataloader, no GPU work
-print("testing passed")
+    # classifier = get_model(
+    #     num_classes=NUM_CLASSES,
+    # ).cuda()
 
-for i in range(EPOCHS):
-    loss_sum = 0.0
+    # criterion = get_loss()
+    # optimizer = torch.optim.Adam(classifier.parameters(), lr=LR, betas=(0.9, 0.999))
+
+    print("testing dataloader")
     for batch_id, (points, target) in tqdm(enumerate(dataloader), total=len(dataloader)):
-        optimizer.zero_grad()
+        pass  # just drain the dataloader, no GPU work
+    print("testing passed")
 
-        points, target = points.float().cuda(), target.long().cuda()
-        points = points.transpose(2, 1)
+    # for i in range(EPOCHS):
+    #     loss_sum = 0.0
+    #     for batch_id, (points, target) in tqdm(enumerate(dataloader), total=len(dataloader)):
+    #         optimizer.zero_grad()
 
-        seg_pred, trans_feat = classifier(points)
-        seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
+    #         points, target = points.float().cuda(), target.long().cuda()
+    #         points = points.transpose(2, 1)
 
-        target = target.view(-1, 1)[:, 0]
-        loss = criterion(seg_pred, target, trans_feat, weights)       
+    #         seg_pred, trans_feat = classifier(points)
+    #         seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
 
-        loss.backward()
-        optimizer.step()
+    #         target = target.view(-1, 1)[:, 0]
+    #         loss = criterion(seg_pred, target, trans_feat, weights)       
 
-        loss_sum += loss
-    print(f"Loss: {loss_sum / len(dataloader)}")
+    #         loss.backward()
+    #         optimizer.step()
+
+    #         loss_sum += loss
+    #     print(f"Loss: {loss_sum / len(dataloader)}")
