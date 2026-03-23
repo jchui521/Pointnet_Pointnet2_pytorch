@@ -80,7 +80,6 @@ class PointNetDataset(Dataset):
 
         # while True:
         for i in range(100):
-            print(i)
             center = points[np.random.choice(N_points)][:3]
             block_min = center - [self.block_size / 2.0, self.block_size / 2.0, 0]
             block_max = center + [self.block_size / 2.0, self.block_size / 2.0, 0]
@@ -92,6 +91,7 @@ class PointNetDataset(Dataset):
             )[0]
             if point_idxs.size > 1024:
                 break
+        print(point_idxs.size)
 
         if point_idxs.size >= self.num_point:
             selected_point_idxs = np.random.choice(

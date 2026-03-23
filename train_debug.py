@@ -35,8 +35,8 @@ if __name__ == "__main__":
     # for i, cat in enumerate(seg_classes.keys()):
     #     seg_label_to_cat[i] = cat
 
-    NUM_WORKERS = 1
-    BATCH_SIZE = 16
+    NUM_WORKERS = 32
+    BATCH_SIZE = 32
     NUM_POINT = 2048
     DECAY_RATE = 1e-4
     LR_DECAY = 0.7
@@ -66,8 +66,8 @@ if __name__ == "__main__":
         batch_size=BATCH_SIZE,
         shuffle=False,
         num_workers=NUM_WORKERS,
-        # pin_memory=True,
-        # worker_init_fn=lambda id: np.random.seed(id),
+        pin_memory=True,
+        worker_init_fn=lambda id: np.random.seed(id),
     )
 
     # weights = torch.Tensor(ds.labelweights).cuda()
