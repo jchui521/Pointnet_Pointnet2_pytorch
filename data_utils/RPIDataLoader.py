@@ -68,7 +68,7 @@ class PointNetDataset(Dataset):
         num_iter = int(np.sum(num_point_all) * sample_rate / num_point)
 
         self.valid_centers = []
-        for room_idx in range(len(rooms_split)):
+        for room_idx in tqdm( range(len(rooms_split)) ):
             points = self.room_points[room_idx]
             N = points.shape[0]
             target = max(1, int(round(sample_prob[room_idx] * num_iter)))
