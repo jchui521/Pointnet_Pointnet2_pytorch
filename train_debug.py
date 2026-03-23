@@ -39,6 +39,7 @@ STEP_SIZE = 10
 LR = 0.001
 NUM_CLASSES = 47
 EPOCHS = 32
+SAMPLE_RATE = 0.1
 
 data_root = "rpi_data"
 
@@ -48,7 +49,7 @@ ds = PointNetDataset(
     num_point=NUM_POINT,
     num_classes=NUM_CLASSES,
     block_size=1.0,
-    sample_rate=1.0,
+    sample_rate=SAMPLE_RATE
     transform=None,
 )
 
@@ -72,8 +73,6 @@ optimizer = torch.optim.Adam(classifier.parameters(), lr=LR, betas=(0.9, 0.999))
 
 for i in range(EPOCHS):
     loss_sum = 0.0
-    total_correct = 0
-    total_seen = 0
     for batch_id, (points, target) in tqdm(enumerate(dataloader)):
         optimizer.zero_grad()
 
@@ -83,16 +82,11 @@ for i in range(EPOCHS):
         seg_pred, trans_feat = classifier(points)
         seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
 
-        batch_label = target.view(-1, 1)[:, 0].cpu().data.numpy()
         target = target.view(-1, 1)[:, 0]
         loss = criterion(seg_pred, target, trans_feat, weights)       
 
         loss.backward()
         optimizer.step()
 
-        pred_choice = seg_pred.cpu().data.max(1)[1].numpy()
-        correct = np.sum(pred_choice == batch_label)
-        total_correct += correct
-        total_seen += BATCH_SIZE * NUM_POINT
         loss_sum += loss
     print(f"Loss: {loss_sum / len(dataloader)}")
