@@ -91,7 +91,6 @@ class PointNetDataset(Dataset):
             )[0]
             if point_idxs.size > 1024:
                 break
-        print(point_idxs.size)
 
         if point_idxs.size >= self.num_point:
             selected_point_idxs = np.random.choice(
