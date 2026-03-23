@@ -49,7 +49,7 @@ ds = PointNetDataset(
     num_point=NUM_POINT,
     num_classes=NUM_CLASSES,
     block_size=1.0,
-    sample_rate=SAMPLE_RATE
+    sample_rate=SAMPLE_RATE,
     transform=None,
 )
 
@@ -73,7 +73,7 @@ optimizer = torch.optim.Adam(classifier.parameters(), lr=LR, betas=(0.9, 0.999))
 
 for i in range(EPOCHS):
     loss_sum = 0.0
-    for batch_id, (points, target) in tqdm(enumerate(dataloader)):
+    for batch_id, (points, target) in tqdm(enumerate(dataloader), total=len(dataloader)):
         optimizer.zero_grad()
 
         points, target = points.float().cuda(), target.long().cuda()
