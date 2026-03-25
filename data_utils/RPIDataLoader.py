@@ -41,7 +41,8 @@ class PointNetDataset(Dataset):
 
         self.room_points, self.room_labels = [], []
         self.room_coord_min, self.room_coord_max = [], []
-        self.room_x_sort = []  # indices that sort each room by x-coordinate
+        self.room_x_sort = []       # indices that sort each room by x-coordinate
+        self.room_x_sorted = []     # pre-sorted x values (avoids O(N) recompute per __getitem__)
         num_point_all = []
         labelweights = np.zeros(num_classes)
 
@@ -57,7 +58,9 @@ class PointNetDataset(Dataset):
             )
             self.room_points.append(points), self.room_labels.append(labels)
             self.room_coord_min.append(coord_min), self.room_coord_max.append(coord_max)
-            self.room_x_sort.append(np.argsort(points[:, 0]))
+            x_sort = np.argsort(points[:, 0])
+            self.room_x_sort.append(x_sort)
+            self.room_x_sorted.append(points[x_sort, 0])
             num_point_all.append(labels.size)
         labelweights = labelweights.astype(np.float32)
         labelweights = labelweights / np.sum(labelweights)
@@ -119,7 +122,7 @@ class PointNetDataset(Dataset):
 
         half = self.block_size / 2.0
         x_sort = self.room_x_sort[room_idx]
-        sorted_x = points[x_sort, 0]
+        sorted_x = self.room_x_sorted[room_idx]  # pre-computed, O(1)
         lo = np.searchsorted(sorted_x, center[0] - half, side='left')
         hi = np.searchsorted(sorted_x, center[0] + half, side='right')
         candidates = x_sort[lo:hi]
