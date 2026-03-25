@@ -36,7 +36,7 @@ if __name__ == "__main__":
     #     seg_label_to_cat[i] = cat
 
     NUM_WORKERS = 4
-    BATCH_SIZE = 64
+    BATCH_SIZE = 128
     NUM_POINT = 4096
     DECAY_RATE = 1e-4
     LR_DECAY = 0.7
@@ -44,7 +44,7 @@ if __name__ == "__main__":
     LR = 0.001
     NUM_CLASSES = 47
     EPOCHS = 1
-    SAMPLE_RATE = 0.05
+    SAMPLE_RATE = 1.0
 
     data_root = "rpi_data"
 
@@ -66,8 +66,9 @@ if __name__ == "__main__":
         batch_size=BATCH_SIZE,
         shuffle=False,
         num_workers=NUM_WORKERS,
+        persistent_workers=True if NUM_WORKERS > 0 else False,
         pin_memory=True,
-        worker_init_fn=lambda id: np.random.seed(id),
+        worker_init_fn=lambda id: np.random.seed(id) if NUM_WORKERS > 0 else None,
     )
 
     # weights = torch.Tensor(ds.labelweights).cuda()
