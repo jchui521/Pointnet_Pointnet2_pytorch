@@ -103,8 +103,8 @@ def parse_args():
     parser.add_argument(
         "--num_workers",
         type=int,
-        default=16,
-        help="Number of workers for data loading [default: 16 for multi-GPU Linux; use 0 on Windows]",
+        default=0,
+        help="Number of workers for data loading [default: 0]",
     )
 
     return parser.parse_args()
@@ -194,7 +194,7 @@ def main(args):
         shuffle=False,
         num_workers=args.num_workers,
         pin_memory=True,
-        drop_last=True,
+        drop_last=False,
     )
     weights = torch.Tensor(TRAIN_DATASET.labelweights).cuda()
 
@@ -233,7 +233,7 @@ def main(args):
         else:
             classifier.load_state_dict(checkpoint["model_state_dict"])
         log_string("Use pretrain model")
-    except:
+    except Exception:
         log_string("No existing model, starting training from scratch...")
         start_epoch = 0
         classifier = classifier.apply(weights_init)
@@ -328,7 +328,7 @@ def main(args):
             correct = np.sum(pred_choice == batch_label)
             total_correct += correct
             total_seen += BATCH_SIZE * NUM_POINT
-            loss_sum += loss
+            loss_sum += loss.item()
         log_string("Training mean loss: %f" % (loss_sum / num_batches))
         log_string("Training accuracy: %f" % (total_correct / float(total_seen)))
 
@@ -361,8 +361,6 @@ def main(args):
             for i, (points, target) in tqdm(
                 enumerate(testDataLoader), total=len(testDataLoader), smoothing=0.9
             ):
-                points = points.data.numpy()
-                points = torch.Tensor(points)
                 points, target = points.float().cuda(), target.long().cuda()
                 points = points.transpose(2, 1)
 
@@ -373,7 +371,7 @@ def main(args):
                 batch_label = target.cpu().data.numpy()
                 target = target.view(-1, 1)[:, 0]
                 loss = criterion(seg_pred, target, trans_feat, weights)
-                loss_sum += loss
+                loss_sum += loss.item()
                 pred_val = np.argmax(pred_val, 2)
                 correct = np.sum((pred_val == batch_label))
                 total_correct += correct
@@ -414,7 +412,7 @@ def main(args):
             for l in range(NUM_CLASSES):
                 iou_per_class_str += "class %s weight: %.3f, IoU: %.3f \n" % (
                     seg_label_to_cat[l] + " " * (14 - len(seg_label_to_cat[l])),
-                    labelweights[l - 1],
+                    labelweights[l],
                     total_correct_class[l] / float(total_iou_deno_class[l]),
                 )
 
