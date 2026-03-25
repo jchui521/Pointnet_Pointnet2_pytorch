@@ -251,7 +251,7 @@ def main(args):
             classifier.parameters(), lr=args.learning_rate, momentum=0.9
         )
 
-    scaler = torch.cuda.amp.GradScaler()  # noqa: deprecated alias, works in all PyTorch 2.x
+    # scaler = torch.cuda.amp.GradScaler()  # noqa: deprecated alias, works in all PyTorch 2.x
 
     def bn_momentum_adjust(m, momentum):
         if isinstance(m, torch.nn.BatchNorm2d) or isinstance(m, torch.nn.BatchNorm1d):
@@ -317,12 +317,12 @@ def main(args):
             # target = target.view(-1, 1)[:, 0]
             # loss = criterion(seg_pred, target, trans_feat, weights)
 
-            scaler.scale(loss).backward()
-            scaler.step(optimizer)
-            scaler.update()
+            # scaler.scale(loss).backward()
+            # scaler.step(optimizer)
+            # scaler.update()
 
-            # loss.backward()
-            # optimizer.step()
+            loss.backward()
+            optimizer.step()
 
             pred_choice = seg_pred.cpu().data.max(1)[1].numpy()
             correct = np.sum(pred_choice == batch_label)
