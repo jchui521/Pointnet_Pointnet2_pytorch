@@ -233,7 +233,7 @@ def main(args):
         else:
             classifier.load_state_dict(checkpoint["model_state_dict"])
         log_string("Use pretrain model")
-    except Exception:
+    except:
         log_string("No existing model, starting training from scratch...")
         start_epoch = 0
         classifier.apply(weights_init)
