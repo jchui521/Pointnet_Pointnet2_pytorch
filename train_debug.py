@@ -71,13 +71,13 @@ if __name__ == "__main__":
         worker_init_fn=lambda id: np.random.seed(id) if NUM_WORKERS > 0 else None,
     )
 
-    # weights = torch.Tensor(ds.labelweights).cuda()
+    weights = torch.Tensor(ds.labelweights).cuda()
 
     classifier = get_model(
         num_classes=NUM_CLASSES,
     ).cuda()
 
-    # criterion = get_loss()
+    criterion = get_loss()
     # optimizer = torch.optim.Adam(classifier.parameters(), lr=LR, betas=(0.9, 0.999))
 
     for i in range(EPOCHS):
@@ -89,10 +89,10 @@ if __name__ == "__main__":
             points = points.transpose(2, 1)
 
             seg_pred, trans_feat = classifier(points)
-            # seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
+            seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
 
-            # target = target.view(-1, 1)[:, 0]
-            # loss = criterion(seg_pred, target, trans_feat, weights)       
+            target = target.view(-1, 1)[:, 0]
+            loss = criterion(seg_pred, target, trans_feat, weights)       
 
             # loss.backward()
             # optimizer.step()
