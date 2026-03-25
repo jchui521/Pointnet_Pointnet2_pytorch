@@ -251,7 +251,7 @@ def main(args):
             classifier.parameters(), lr=args.learning_rate, momentum=0.9
         )
 
-    scaler = torch.cuda.amp.GradScaler()  # noqa: deprecated alias, works in all PyTorch 2.x
+    scaler = torch.amp.GradScaler()  # noqa: deprecated alias, works in all PyTorch 2.x
 
     def bn_momentum_adjust(m, momentum):
         if isinstance(m, torch.nn.BatchNorm2d) or isinstance(m, torch.nn.BatchNorm1d):
