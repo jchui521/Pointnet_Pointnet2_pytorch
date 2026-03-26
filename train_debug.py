@@ -35,9 +35,9 @@ if __name__ == "__main__":
     # for i, cat in enumerate(seg_classes.keys()):
     #     seg_label_to_cat[i] = cat
 
-    NUM_WORKERS = 4
-    BATCH_SIZE = 128
-    NUM_POINT = 4096
+    NUM_WORKERS = 0
+    BATCH_SIZE = 16
+    NUM_POINT = 2048
     DECAY_RATE = 1e-4
     LR_DECAY = 0.7
     STEP_SIZE = 10
@@ -46,9 +46,33 @@ if __name__ == "__main__":
     EPOCHS = 1
     SAMPLE_RATE = 1.0
 
+    def inplace_relu(m):
+        classname = m.__class__.__name__
+        if classname.find("ReLU") != -1:
+            m.inplace = True
+
+    def weights_init(m):
+        classname = m.__class__.__name__
+        if classname.find("Conv2d") != -1:
+            torch.nn.init.xavier_normal_(m.weight.data)
+            torch.nn.init.constant_(m.bias.data, 0.0)
+        elif classname.find("Linear") != -1:
+            torch.nn.init.xavier_normal_(m.weight.data)
+            torch.nn.init.constant_(m.bias.data, 0.0)
+
     data_root = "rpi_data"
 
-    ds = PointNetDataset(
+    train_ds = PointNetDataset(
+        split="train",
+        data_root=data_root,
+        num_point=NUM_POINT,
+        num_classes=NUM_CLASSES,
+        block_size=1.0,
+        sample_rate=SAMPLE_RATE,
+        transform=None,
+    )
+
+    test_ds = PointNetDataset(
         split="test",
         data_root=data_root,
         num_point=NUM_POINT,
@@ -58,11 +82,8 @@ if __name__ == "__main__":
         transform=None,
     )
 
-    # import torch.multiprocessing as mp
-    # mp.set_sharing_strategy('file_system')
-
-    dataloader = torch.utils.data.DataLoader(
-        ds,
+    train_dataloader = torch.utils.data.DataLoader(
+        train_ds,
         batch_size=BATCH_SIZE,
         shuffle=False,
         num_workers=NUM_WORKERS,
@@ -71,18 +92,31 @@ if __name__ == "__main__":
         worker_init_fn=lambda id: np.random.seed(id) if NUM_WORKERS > 0 else None,
     )
 
-    weights = torch.Tensor(ds.labelweights).cuda()
+    test_dataloader = torch.utils.data.DataLoader(
+        test_ds,
+        batch_size=BATCH_SIZE,
+        shuffle=False,
+        num_workers=NUM_WORKERS,
+        persistent_workers=True if NUM_WORKERS > 0 else False,
+        pin_memory=True,
+        worker_init_fn=lambda id: np.random.seed(id) if NUM_WORKERS > 0 else None,
+    )
+
+    weights = torch.Tensor(train_ds.labelweights).cuda()
 
     classifier = get_model(
         num_classes=NUM_CLASSES,
     ).cuda()
+    classifier.apply(inplace_relu)
+    classifier.apply(weights_init)
 
     criterion = get_loss()
     # optimizer = torch.optim.Adam(classifier.parameters(), lr=LR, betas=(0.9, 0.999))
 
+    print("starting training ... ")
     for i in range(EPOCHS):
         # loss_sum = 0.0
-        for batch_id, (points, target) in tqdm(enumerate(dataloader), total=len(dataloader)):
+        for batch_id, (points, target) in tqdm(enumerate(train_dataloader), total=len(train_dataloader)):
             # optimizer.zero_grad()
 
             points, target = points.float().cuda(), target.long().cuda()
@@ -99,3 +133,14 @@ if __name__ == "__main__":
 
             # loss_sum += loss
         # print(f"Loss: {loss_sum / len(dataloader)}")
+    
+        for batch_id, (points, target) in tqdm(enumerate(test_dataloader), total=len(test_dataloader)):
+            with torch.no_grad():
+                points, target = points.float().cuda(), target.long().cuda()
+                points = points.transpose(2, 1)
+
+                seg_pred, trans_feat = classifier(points)
+                seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
+
+                target = target.view(-1, 1)[:, 0]
+                loss = criterion(seg_pred, target, trans_feat, weights)

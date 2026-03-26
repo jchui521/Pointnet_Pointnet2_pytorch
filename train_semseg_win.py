@@ -153,7 +153,7 @@ def main(args):
     log_string(args)
 
     root = "rpi_data"
-    NUM_CLASSES = 48
+    NUM_CLASSES = 47
     NUM_POINT = args.npoint
     BATCH_SIZE = args.batch_size
 
@@ -200,6 +200,7 @@ def main(args):
 
     log_string("The number of training data is: %d" % len(TRAIN_DATASET))
     log_string("The number of test data is: %d" % len(TEST_DATASET))
+    log_string("The number of classes is: %d" % NUM_CLASSES)
 
     """MODEL LOADING"""
     MODEL = importlib.import_module(args.model)

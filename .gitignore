@@ -122,3 +122,6 @@ zips/
 .venv/
 venv/
 /.vscode
+
+# logs
+/log
