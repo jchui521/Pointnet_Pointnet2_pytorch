@@ -142,9 +142,11 @@ class PointNetDataset(Dataset):
         # normalize
         selected_points = points[selected_point_idxs, :]  # num_point * 6
         current_points = np.zeros((self.num_point, 9))  # num_point * 9
-        current_points[:, 6] = selected_points[:, 0] / self.room_coord_max[room_idx][0]
-        current_points[:, 7] = selected_points[:, 1] / self.room_coord_max[room_idx][1]
-        current_points[:, 8] = selected_points[:, 2] / self.room_coord_max[room_idx][2]
+        coord_range = self.room_coord_max[room_idx] - self.room_coord_min[room_idx]
+        coord_range = np.where(coord_range == 0, 1.0, coord_range)  # avoid div-by-zero
+        current_points[:, 6] = (selected_points[:, 0] - self.room_coord_min[room_idx][0]) / coord_range[0]
+        current_points[:, 7] = (selected_points[:, 1] - self.room_coord_min[room_idx][1]) / coord_range[1]
+        current_points[:, 8] = (selected_points[:, 2] - self.room_coord_min[room_idx][2]) / coord_range[2]
         selected_points[:, 0] = selected_points[:, 0] - center[0]
         selected_points[:, 1] = selected_points[:, 1] - center[1]
         selected_points[:, 2] = selected_points[:, 2] - center[2]
