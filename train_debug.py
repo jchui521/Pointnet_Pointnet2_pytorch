@@ -115,7 +115,7 @@ if __name__ == "__main__":
 
     print("starting training ... ")
     for i in range(EPOCHS):
-        # loss_sum = 0.0
+        loss_sum = 0.0
         for batch_id, (points, target) in tqdm(enumerate(train_dataloader), total=len(train_dataloader)):
             # optimizer.zero_grad()
 
@@ -132,8 +132,9 @@ if __name__ == "__main__":
             # optimizer.step()
 
             # loss_sum += loss
-        # print(f"Loss: {loss_sum / len(dataloader)}")
+        print(f"Loss: {loss_sum / len(train_dataloader)}")
     
+        loss_sum = 0.0
         for batch_id, (points, target) in tqdm(enumerate(test_dataloader), total=len(test_dataloader)):
             with torch.no_grad():
                 points, target = points.float().cuda(), target.long().cuda()
@@ -144,3 +145,6 @@ if __name__ == "__main__":
 
                 target = target.view(-1, 1)[:, 0]
                 loss = criterion(seg_pred, target, trans_feat, weights)
+
+                loss_sum += loss
+        print(f"Loss: {loss_sum / len(test_dataloader)}")
