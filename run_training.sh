@@ -1,0 +1,1 @@
+python train_semseg_win.py --epoch 32 --num_workers 32 --batch_size 128 --npoint 16384  --gpu 0,1,2,3,4,5,6,7
