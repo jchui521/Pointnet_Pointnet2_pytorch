@@ -259,7 +259,7 @@ class DatasetWholeScene:
 if __name__ == "__main__":
     # data_root = "rpi_data"
     data_root = "data/rpi_data"
-    num_point, block_size, sample_rate, num_classes = 4096, 1.0, 0.01, 48
+    num_point, block_size, sample_rate, num_classes = 4096, 1.0, 0.01, 47
 
     point_data = PointNetDataset(
         split="train",
