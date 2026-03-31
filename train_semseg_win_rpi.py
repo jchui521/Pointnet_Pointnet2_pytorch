@@ -14,9 +14,9 @@ import provider
 from data_utils.RPIDataLoader import PointNetDataset
 from models.pointnet2_sem_seg import get_model, get_loss
 
-NUM_WORKERS = 4
-BATCH_SIZE = 128
-NUM_POINT = 8192
+NUM_WORKERS = 16
+BATCH_SIZE = 196
+NUM_POINT = 16384
 DECAY_RATE = 1e-4
 LR_DECAY = 0.7
 STEP_SIZE = 10
@@ -24,8 +24,8 @@ LR = 0.001
 NUM_CLASSES = 19
 EPOCHS = 1
 SAMPLE_RATE = 1.0
-# GPUS = "0,1,2,3,4,5,6,7"
-GPUS = "0"
+GPUS = "0,1,2,3,4,5,6,7"
+# GPUS = "0"
 log_dir = None
 
 def inplace_relu(m):
@@ -150,6 +150,8 @@ if __name__ == "__main__":
     optimizer = torch.optim.AdamW(classifier.parameters(), lr=LR, betas=(0.9, 0.999), eps=1e-08, weight_decay=DECAY_RATE)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=STEP_SIZE, gamma=LR_DECAY)
 
+    best_IoU = 0
+
     for epoch in range(EPOCHS):
         log_string(f"**** EPOCH {epoch + 1} / {EPOCHS} ****")
         
@@ -197,24 +199,52 @@ if __name__ == "__main__":
             total_iou_deno_class = [0 for _ in range(NUM_CLASSES)]
             classifier = classifier.eval()
             for i, (points, target) in tqdm(enumerate(testDataLoader), total=len(testDataLoader)):
-                with torch.no_grad():
-                    points, target = points.float().cuda(), target.long().cuda()
-                    points = points.transpose(2, 1)
+                points, target = points.float().cuda(), target.long().cuda()
+                points = points.transpose(2, 1)
 
-                    seg_pred, trans_feat = classifier(points)
-                    seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
+                seg_pred, trans_feat = classifier(points)
+                pred_val = seg_pred.contiguous().max(1)[1] 
+                seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
 
-                    target = target.view(-1, 1)[:, 0]
-                    loss = criterion(seg_pred, target, trans_feat, weights)
+                target = target.view(-1, 1)[:, 0]
+                loss = criterion(seg_pred, target, trans_feat, weights)
 
-                    pred_choice = seg_pred.cpu().data.max(1)[1].numpy()
-                    correct = np.sum(pred_choice == target.cpu().data.numpy())
-                    total_correct += correct
-                    total_seen += BATCH_SIZE * NUM_POINT
-                    loss_sum += loss
+                pred_choice = seg_pred.cpu().data.max(1)[1].numpy()
+                loss_sum += loss
+                pred_val = np.argmax(pred_val, 2)
+                correct = np.sum(pred_val == batch_label)
+                total_correct += correct
+                total_seen += BATCH_SIZE * NUM_POINT
+                tmp, _ = np.histogram(batch_label, range(NUM_CLASSES + 1))
+                labelweights += tmp
+
+                for l in range(NUM_CLASSES):
+                    total_seen_class[l] += np.sum((batch_label == l))
+                    total_correct_class[l] += np.sum(
+                        (pred_val == l) & (batch_label == l)
+                    )
+                    total_iou_deno_class[l] += np.sum(
+                        ((pred_val == l) | (batch_label == l))
+                    )
+            labelweights = labelweights.astype(np.float32) / np.sum(labelweights.astype(np.float32))
+            mIoU = np.mean(np.array(total_correct_class) / (np.array(total_iou_deno_class, dtype=float) + 1e-6))
+
+            if mIoU >= best_IoU:
+                best_iou = mIoU
+                logger.info("Save model...")
+                savepath = str(checkpoints_dir) + "/best_model.pth"
+                log_string("Saving at %s" % savepath)
+                state = {
+                    "epoch": epoch,
+                    "class_avg_iou": mIoU,
+                    "model_state_dict": classifier.module.state_dict() if isinstance(classifier, torch.nn.DataParallel) else classifier.state_dict(),
+                    "optimizer_state_dict": optimizer.state_dict(),
+                }
+                torch.save(state, savepath)
+                log_string("Saving model....")
     
-        log_string(f"Mean test loss: {loss_sum / num_batches}")
-        log_string(f"Mean test accuracy: {total_correct / float(total_seen)}")
+            log_string(f"Mean test loss: {loss_sum / num_batches}")
+            log_string(f"Mean test accuracy: {total_correct / float(total_seen)}")
 
         scheduler.step()
         torch.cuda.empty_cache()
