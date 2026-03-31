@@ -24,7 +24,8 @@ LR = 0.001
 NUM_CLASSES = 47
 EPOCHS = 1
 SAMPLE_RATE = 1.0
-GPUS = "0,1,2,3,4,5,6,7"
+# GPUS = "0,1,2,3,4,5,6,7"
+GPUS = "0"
 log_dir = None
 
 def inplace_relu(m):
