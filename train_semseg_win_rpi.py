@@ -91,16 +91,16 @@ if __name__ == "__main__":
     """DATA LOADING"""
     root = "rpi_data"
 
-    print("start loading training data ...")
-    TRAIN_DATASET = PointNetDataset(
-        split="train",
-        data_root=root,
-        num_point=NUM_POINT,
-        num_classes=NUM_CLASSES,
-        block_size=1.0,
-        sample_rate=1.0,
-        transform=None,
-    )
+    # print("start loading training data ...")
+    # TRAIN_DATASET = PointNetDataset(
+    #     split="train",
+    #     data_root=root,
+    #     num_point=NUM_POINT,
+    #     num_classes=NUM_CLASSES,
+    #     block_size=1.0,
+    #     sample_rate=1.0,
+    #     transform=None,
+    # )
     print("start loading test data ...")
     TEST_DATASET = PointNetDataset(
         split="test",
@@ -112,16 +112,16 @@ if __name__ == "__main__":
         transform=None,
     )
 
-    trainDataLoader = torch.utils.data.DataLoader(
-        TRAIN_DATASET,
-        batch_size=BATCH_SIZE,
-        shuffle=True,
-        num_workers=NUM_WORKERS, 
-        pin_memory=True,
-        drop_last=True,
-        persistent_workers=True if NUM_WORKERS > 0 else False,
-        worker_init_fn=worker_init_fn,
-    )
+    # trainDataLoader = torch.utils.data.DataLoader(
+    #     TRAIN_DATASET,
+    #     batch_size=BATCH_SIZE,
+    #     shuffle=True,
+    #     num_workers=NUM_WORKERS, 
+    #     pin_memory=True,
+    #     drop_last=True,
+    #     persistent_workers=True if NUM_WORKERS > 0 else False,
+    #     worker_init_fn=worker_init_fn,
+    # )
     testDataLoader = torch.utils.data.DataLoader(
         TEST_DATASET,
         batch_size=BATCH_SIZE,
@@ -130,9 +130,10 @@ if __name__ == "__main__":
         pin_memory=True,
         drop_last=False,
     )
-    weights = torch.Tensor(TRAIN_DATASET.labelweights).cuda()
+    # weights = torch.Tensor(TRAIN_DATASET.labelweights).cuda()
+    weights = torch.Tensor(TEST_DATASET.labelweights).cuda()
 
-    log_string(f"Number of training data is: {len(TRAIN_DATASET)}")
+    # log_string(f"Number of training data is: {len(TRAIN_DATASET)}")
     log_string(f"Number of test data is {len(TEST_DATASET)}")
     
     classifier = get_model(NUM_CLASSES).cuda()
@@ -152,14 +153,16 @@ if __name__ == "__main__":
     for epoch in range(EPOCHS):
         log_string(f"**** EPOCH {epoch + 1} / {EPOCHS} ****")
         
-        num_batches = len(trainDataLoader)
+        # num_batches = len(trainDataLoader)
+        num_batches = len(testDataLoader)
         total_correct = 0
         total_seen = 0
         loss_sum = 0
         classifier = classifier.train()
 
-        """Training Step"""
-        for i, (points, target) in tqdm(enumerate(trainDataLoader), total=len(trainDataLoader)):
+        # """Training Step"""
+        # for i, (points, target) in tqdm(enumerate(trainDataLoader), total=len(trainDataLoader)):
+        for i, (points, target) in tqdm(enumerate(testDataLoader), total=len(testDataLoader)):
             optimizer.zero_grad()
 
             points, target = points.float().cuda(), target.long().cuda()
@@ -182,36 +185,36 @@ if __name__ == "__main__":
         log_string(f"Mean train loss: {loss_sum / num_batches}")
         log_string(f"Mean train accuracy: {total_correct / float(total_seen)}")
     
-        """Eval Step"""
-        with torch.no_grad():
-            num_batches = len(testDataLoader)
-            total_correct = 0
-            total_seen = 0
-            loss_sum = 0
-            labelweights = np.zeros(NUM_CLASSES)
-            total_seen_class = [0 for _ in range(NUM_CLASSES)]
-            total_correct_class = [0 for _ in range(NUM_CLASSES)]
-            total_iou_deno_class = [0 for _ in range(NUM_CLASSES)]
-            classifier = classifier.eval()
-            for i, (points, target) in tqdm(enumerate(testDataLoader), total=len(testDataLoader)):
-                with torch.no_grad():
-                    points, target = points.float().cuda(), target.long().cuda()
-                    points = points.transpose(2, 1)
+        # """Eval Step"""
+        # with torch.no_grad():
+        #     num_batches = len(testDataLoader)
+        #     total_correct = 0
+        #     total_seen = 0
+        #     loss_sum = 0
+        #     labelweights = np.zeros(NUM_CLASSES)
+        #     total_seen_class = [0 for _ in range(NUM_CLASSES)]
+        #     total_correct_class = [0 for _ in range(NUM_CLASSES)]
+        #     total_iou_deno_class = [0 for _ in range(NUM_CLASSES)]
+        #     classifier = classifier.eval()
+        #     for i, (points, target) in tqdm(enumerate(testDataLoader), total=len(testDataLoader)):
+        #         with torch.no_grad():
+        #             points, target = points.float().cuda(), target.long().cuda()
+        #             points = points.transpose(2, 1)
 
-                    seg_pred, trans_feat = classifier(points)
-                    seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
+        #             seg_pred, trans_feat = classifier(points)
+        #             seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
 
-                    target = target.view(-1, 1)[:, 0]
-                    loss = criterion(seg_pred, target, trans_feat, weights)
+        #             target = target.view(-1, 1)[:, 0]
+        #             loss = criterion(seg_pred, target, trans_feat, weights)
 
-                    pred_choice = seg_pred.cpu().data.max(1)[1].numpy()
-                    correct = np.sum(pred_choice == target.cpu().data.numpy())
-                    total_correct += correct
-                    total_seen += BATCH_SIZE * NUM_POINT
-                    loss_sum += loss
+        #             pred_choice = seg_pred.cpu().data.max(1)[1].numpy()
+        #             correct = np.sum(pred_choice == target.cpu().data.numpy())
+        #             total_correct += correct
+        #             total_seen += BATCH_SIZE * NUM_POINT
+        #             loss_sum += loss
     
-        log_string(f"Mean test loss: {loss_sum / num_batches}")
-        log_string(f"Mean test accuracy: {total_correct / float(total_seen)}")
+        # log_string(f"Mean test loss: {loss_sum / num_batches}")
+        # log_string(f"Mean test accuracy: {total_correct / float(total_seen)}")
 
         scheduler.step()
         torch.cuda.empty_cache()
