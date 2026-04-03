@@ -15,7 +15,7 @@ from data_utils.RPIDataLoader import PointNetDataset
 from models.pointnet2_sem_seg import get_model, get_loss
 
 NUM_WORKERS = 4
-BATCH_SIZE = 196
+BATCH_SIZE = 128
 NUM_POINT = 8192
 DECAY_RATE = 1e-4
 LR_DECAY = 0.7
