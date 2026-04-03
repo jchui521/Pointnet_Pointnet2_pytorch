@@ -198,7 +198,11 @@ if __name__ == "__main__":
             total_correct_class = [0 for _ in range(NUM_CLASSES)]
             total_iou_deno_class = [0 for _ in range(NUM_CLASSES)]
             classifier = classifier.eval()
-            for i, (points, target) in tqdm(enumerate(testDataLoader), total=len(testDataLoader)):
+
+            log_string("---- EPOCH %03d EVALUATION ----" % (epoch + 1))
+            for i, (points, target) in tqdm(
+                enumerate(testDataLoader), total=len(testDataLoader), smoothing=0.9
+            ):
                 points, target = points.float().cuda(), target.long().cuda()
                 points = points.transpose(2, 1)
 
@@ -206,13 +210,12 @@ if __name__ == "__main__":
                 pred_val = seg_pred.contiguous().cpu().data.numpy()
                 seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
 
+                batch_label = target.cpu().data.numpy()
                 target = target.view(-1, 1)[:, 0]
                 loss = criterion(seg_pred, target, trans_feat, weights)
-
-                pred_choice = seg_pred.cpu().data.max(1)[1].numpy()
-                loss_sum += loss
+                loss_sum += loss.item()
                 pred_val = np.argmax(pred_val, 2)
-                correct = np.sum(pred_val == batch_label)
+                correct = np.sum((pred_val == batch_label))
                 total_correct += correct
                 total_seen += BATCH_SIZE * NUM_POINT
                 tmp, _ = np.histogram(batch_label, range(NUM_CLASSES + 1))
@@ -226,10 +229,19 @@ if __name__ == "__main__":
                     total_iou_deno_class[l] += np.sum(
                         ((pred_val == l) | (batch_label == l))
                     )
-            labelweights = labelweights.astype(np.float32) / np.sum(labelweights.astype(np.float32))
-            mIoU = np.mean(np.array(total_correct_class) / (np.array(total_iou_deno_class, dtype=float) + 1e-6))
 
-            if mIoU >= best_IoU:
+            labelweights = labelweights.astype(np.float32) / np.sum(
+                labelweights.astype(np.float32)
+            )
+            mIoU = np.mean(
+                np.array(total_correct_class)
+                / (np.array(total_iou_deno_class, dtype=np.float64) + 1e-6)
+            )
+
+            log_string("Eval mean loss: %f" % (loss_sum / num_batches))
+            log_string("Eval accuracy: %f" % (total_correct / float(total_seen)))
+
+            if mIoU >= best_iou:
                 best_iou = mIoU
                 logger.info("Save model...")
                 savepath = str(checkpoints_dir) + "/best_model.pth"
@@ -238,13 +250,12 @@ if __name__ == "__main__":
                     "epoch": epoch,
                     "class_avg_iou": mIoU,
                     "model_state_dict": classifier.module.state_dict() if isinstance(classifier, torch.nn.DataParallel) else classifier.state_dict(),
+                    # "model_state_dict": classifier.state_dict(),
                     "optimizer_state_dict": optimizer.state_dict(),
                 }
                 torch.save(state, savepath)
                 log_string("Saving model....")
-    
-            log_string(f"Mean test loss: {loss_sum / num_batches}")
-            log_string(f"Mean test accuracy: {total_correct / float(total_seen)}")
+            log_string("Best mIoU: %f" % best_iou)
 
         scheduler.step()
         torch.cuda.empty_cache()
