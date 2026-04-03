@@ -203,7 +203,7 @@ if __name__ == "__main__":
                 points = points.transpose(2, 1)
 
                 seg_pred, trans_feat = classifier(points)
-                pred_val = seg_pred.contiguous().max(1)[1] 
+                pred_val = seg_pred.contiguous().cpu().data.numpy()
                 seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
 
                 target = target.view(-1, 1)[:, 0]
