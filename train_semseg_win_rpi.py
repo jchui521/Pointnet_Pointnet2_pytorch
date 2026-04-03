@@ -150,7 +150,7 @@ if __name__ == "__main__":
     optimizer = torch.optim.AdamW(classifier.parameters(), lr=LR, betas=(0.9, 0.999), eps=1e-08, weight_decay=DECAY_RATE)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=STEP_SIZE, gamma=LR_DECAY)
 
-    best_IoU = 0
+    best_iou = 0
 
     for epoch in range(EPOCHS):
         log_string(f"**** EPOCH {epoch + 1} / {EPOCHS} ****")
