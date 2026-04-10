@@ -4,7 +4,7 @@ Date: Nov 2019
 """
 import argparse
 import os
-from data_utils.S3DISDataLoader import ScannetDatasetWholeScene
+from data_utils.RPIDataLoader import DatasetWholeScene
 from data_utils.indoor3d_util import g_label2color
 import torch
 import logging
@@ -75,13 +75,13 @@ def main(args):
     log_string('PARAMETER ...')
     log_string(args)
 
-    NUM_CLASSES = 13
+    NUM_CLASSES = 19
     BATCH_SIZE = args.batch_size
     NUM_POINT = args.num_point
 
     root = "rpi_data"
 
-    TEST_DATASET_WHOLE_SCENE = ScannetDatasetWholeScene(root, split='test', test_area=args.test_area, block_points=NUM_POINT)
+    TEST_DATASET_WHOLE_SCENE = DatasetWholeScene(root, block_size=1.0, block_points=NUM_POINT, stride=0.5, padding=0.001, num_classes=13, test_area=args.test_area)
     log_string("The number of test data is: %d" % len(TEST_DATASET_WHOLE_SCENE))
 
     '''MODEL LOADING'''
