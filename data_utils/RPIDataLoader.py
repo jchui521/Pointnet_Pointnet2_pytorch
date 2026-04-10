@@ -183,9 +183,7 @@ class DatasetWholeScene:
         self.root = root
         self.stride = stride
         self.scene_points_num = []
-        self.file_list = [
-            d for d in os.listdir(root)
-        ]
+        self.file_list = os.listdir(root)
         self.scene_points_list = []
         self.room_coord_min, self.room_coord_max = [], []
         self.semantic_labels_list = []
