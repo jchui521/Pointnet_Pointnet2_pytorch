@@ -81,7 +81,7 @@ def main(args):
 
     root = "rpi_data"
 
-    TEST_DATASET_WHOLE_SCENE = DatasetWholeScene(root, block_size=1.0, block_points=NUM_POINT, stride=0.5, padding=0.001, num_classes=13, test_area=args.test_area)
+    TEST_DATASET_WHOLE_SCENE = DatasetWholeScene(root, block_size=1.0, block_points=NUM_POINT, stride=0.5, padding=0.001, num_classes=NUM_CLASSES)
     log_string("The number of test data is: %d" % len(TEST_DATASET_WHOLE_SCENE))
 
     '''MODEL LOADING'''
