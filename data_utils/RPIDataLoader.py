@@ -187,6 +187,7 @@ class DatasetWholeScene:
         self.scene_points_list = []
         self.room_coord_min, self.room_coord_max = [], []
         self.semantic_labels_list = []
+        print("file_list:", self.file_list)
         for file in self.file_list:
             data = np.load(os.path.join(root, file))
             points = data[:, :3]
@@ -267,33 +268,33 @@ class DatasetWholeScene:
 
 
 if __name__ == "__main__":
-    # data_root = "rpi_data"
-    data_root = "data/rpi_data"
-    num_point, block_size, sample_rate, num_classes = 4096, 1.0, 0.01, 47
+    data_root = "rpi_data"
+    # data_root = "data/rpi_data"
+    num_point, block_size, sample_rate, num_classes = 4096, 1.0, 0.01, 19
 
-    point_data = PointNetDataset(
-        split="train",
-        data_root=data_root,
-        num_point=num_point,
-        num_classes=num_classes,
-        block_size=block_size,
-        sample_rate=sample_rate,
-        transform=None,
-    )
+    # point_data = PointNetDataset(
+    #     split="train",
+    #     data_root=data_root,
+    #     num_point=num_point,
+    #     num_classes=num_classes,
+    #     block_size=block_size,
+    #     sample_rate=sample_rate,
+    #     transform=None,
+    # )
 
-    print("point data size:", point_data.__len__())
-    print("point data 0 shape:", point_data.__getitem__(0)[0].shape)
-    print("point label 0 shape:", point_data.__getitem__(0)[1].shape)
+    # print("point data size:", point_data.__len__())
+    # print("point data 0 shape:", point_data.__getitem__(0)[0].shape)
+    # print("point label 0 shape:", point_data.__getitem__(0)[1].shape)
 
-    data_loader = DataLoader(
-        point_data,
-        batch_size=16,
-        shuffle=True,
-    )
+    # data_loader = DataLoader(
+    #     point_data,
+    #     batch_size=16,
+    #     shuffle=True,
+    # )
 
-    print("---------")
-    print("data_loader size:", len(data_loader))
-    print("data_loader 0 shape:", data_loader.dataset.__getitem__(0)[0].shape)
+    # print("---------")
+    # print("data_loader size:", len(data_loader))
+    # print("data_loader 0 shape:", data_loader.dataset.__getitem__(0)[0].shape)
     
     # point_data = DatasetWholeScene(
     #     root=data_root,
@@ -306,4 +307,9 @@ if __name__ == "__main__":
     # print("point data 0 shape:", point_data.__getitem__(0)[0].shape)
     # print("point label 0 shape:", point_data.__getitem__(0)[1].shape)
 
+
+    ds = DatasetWholeScene(root=data_root)
+    print("point data size:", ds.__len__())
+    print("point data 0 shape:", ds.__getitem__(0)[0].shape)
+    print("point label 0 shape:", ds.__getitem__(0)[1].shape)
 
