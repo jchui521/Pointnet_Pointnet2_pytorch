@@ -188,10 +188,22 @@ class DatasetWholeScene:
         ]
         self.scene_points_list = []
         self.room_coord_min, self.room_coord_max = [], []
+        self.semantic_labels_list = []
         for file in self.file_list:
             data = np.load(os.path.join(root, file))
             points = data[:, :3]
             self.scene_points_list.append(data[:, :6])
+            self.semantic_labels_list.append(data[:, :6])
+
+        labelweights = np.zeros(num_classes)
+        for seg in self.semantic_labels_list:
+            tmp, _ = np.histogram(seg, range(num_classes + 1))
+            self.scene_points_num.append(seg.shape[0])
+            labelweights += tmp
+        labelweights = labelweights.astype(np.float32)
+        labelweights = labelweights / np.sum(labelweights)
+        self.labelweights = np.power(np.amax(labelweights) / labelweights, 1 / 3.0)
+        
 
     def __getitem__(self, index):
         point_set_ini = self.scene_points_list[index]
