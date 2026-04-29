@@ -1,8 +1,7 @@
 import os
 import numpy as np
 import glob
-import colorsys
-import zipfile
+from tqdm import tqdm
 
 if __name__ == "__main__":
     # ROOT = "/home/nvidia/Pointnet_Pointnet2_pytorch/rpi_data_raw"
@@ -15,42 +14,10 @@ if __name__ == "__main__":
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
 
-    unzip = False
-    # zip_file_dir = "/home/nvidia/zips"
-    if unzip:
-        zip_file_dir = "zips"
-        zip_files = os.listdir(zip_file_dir)
-        for zip_file in zip_files:
-            print(f"Unzipping: {zip_file}")
-            zip_file_path = os.path.join(zip_file_dir, zip_file)
-            with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
-                zip_ref.extractall(ROOT)
-            break
-
-    classes = []
-    scenes = os.listdir(ROOT)
-    for scene in scenes:
-        anno_dir = os.path.join(ROOT,scene, "_PointOut")
-        anno = os.listdir(anno_dir)
-        for a in anno:
-            if ".xyz" in a:
-                cls = a.rsplit("_", 1)[0]
-                if cls not in classes:
-                    classes.append(cls)
-
-    class_file = os.path.join(output_dir, "classes.txt")
-    with open(class_file, "w") as file:
-        for cls in classes:
-            file.write(cls + "\n")
-
-    n = len(classes)
+    class_file = "classes.txt"
+    with open(class_file, "r") as file:
+        classes = [line.rstrip() for line in file.readlines()]
     class2labels = {cls: i for i, cls in enumerate(classes)}
-    class_colors = []
-    for i, name in enumerate(classes):
-        hue = i / n
-        rgb = colorsys.hsv_to_rgb(hue, 0.9, 0.9)
-        class_colors.append([c for c in rgb])
-    class_colors = np.array(class_colors)
 
     for scene_dir in os.listdir(ROOT):
         print(f"Processing Scene: {scene_dir}")
@@ -59,13 +26,10 @@ if __name__ == "__main__":
         print(f"Number of Annotations: {len(anno)}")
 
         points_list = []
-        for f in glob.glob(os.path.join(anno_dir, "*.xyz")):
-            if os.path.basename(f)  == "_ALL.xyz":
-                continue
+        for f in tqdm( glob.glob(os.path.join(anno_dir, "*.xyz")) ):
             cls = os.path.basename(f).rsplit("_", 1)[0]
-            print(f)
-            # if cls not in classes:
-                # cls = 'clutter'
+            if cls not in classes:
+                cls = 'Clutter'
             points = np.loadtxt(f, delimiter=",")
             if points.ndim == 1:
                 points = points.reshape(1, -1)

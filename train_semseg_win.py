@@ -21,9 +21,8 @@ from tqdm import tqdm
 import provider
 from data_utils.RPIDataLoader import PointNetDataset
 
-import multiprocessing
-
-multiprocessing.set_start_method("fork")
+# import multiprocessing
+# multiprocessing.set_start_method("fork")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = BASE_DIR
@@ -49,8 +48,8 @@ def parse_args():
     parser.add_argument(
         "--model",
         type=str,
-        default="pointnet_sem_seg",
-        help="model name [default: pointnet_sem_seg]",
+        default="pointnet2_sem_seg",
+        help="model name [default: pointnet2_sem_seg]",
     )
     parser.add_argument(
         "--batch_size",
@@ -68,6 +67,7 @@ def parse_args():
         help="Initial learning rate [default: 0.001]",
     )
     parser.add_argument(
+        # "--gpu", type=str, default="0,1,2,3,4,5,6,7", help="GPUs to use [default: all 8]"
         "--gpu", type=str, default="0", help="GPU to use [default: GPU 0]"
     )
     parser.add_argument(
@@ -103,8 +103,8 @@ def parse_args():
     parser.add_argument(
         "--num_workers",
         type=int,
-        default=0,
-        help="Number of workers for data loading [default: 0 for Windows, should increase to 16 or 24 when running on VMs]",
+        default=16,
+        help="Number of workers for data loading [default: 16]",
     )
 
     return parser.parse_args()
@@ -121,6 +121,7 @@ def main(args):
 
     """HYPER PARAMETER"""
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+    torch.backends.cudnn.benchmark = True
 
     """CREATE DIR"""
     timestr = str(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M"))
@@ -139,7 +140,6 @@ def main(args):
     log_dir.mkdir(exist_ok=True)
 
     """LOG"""
-    args = parse_args()
     logger = logging.getLogger("Model")
     logger.setLevel(logging.INFO)
     formatter = logging.Formatter(
@@ -194,12 +194,13 @@ def main(args):
         shuffle=False,
         num_workers=args.num_workers,
         pin_memory=True,
-        drop_last=True,
+        drop_last=False,
     )
     weights = torch.Tensor(TRAIN_DATASET.labelweights).cuda()
 
     log_string("The number of training data is: %d" % len(TRAIN_DATASET))
     log_string("The number of test data is: %d" % len(TEST_DATASET))
+    log_string("The number of classes is: %d" % NUM_CLASSES)
 
     """MODEL LOADING"""
     MODEL = importlib.import_module(args.model)
@@ -236,7 +237,7 @@ def main(args):
     except:
         log_string("No existing model, starting training from scratch...")
         start_epoch = 0
-        classifier = classifier.apply(weights_init)
+        classifier.apply(weights_init)
 
     if args.optimizer == "Adam":
         optimizer = torch.optim.Adam(
@@ -250,6 +251,8 @@ def main(args):
         optimizer = torch.optim.SGD(
             classifier.parameters(), lr=args.learning_rate, momentum=0.9
         )
+
+    # scaler = torch.cuda.amp.GradScaler()  # noqa: deprecated alias, works in all PyTorch 2.x
 
     def bn_momentum_adjust(m, momentum):
         if isinstance(m, torch.nn.BatchNorm2d) or isinstance(m, torch.nn.BatchNorm1d):
@@ -300,12 +303,25 @@ def main(args):
             points, target = points.float().cuda(), target.long().cuda()
             points = points.transpose(2, 1)
 
-            seg_pred, trans_feat = classifier(points)
-            seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
+            with torch.autocast(device_type="cuda"):
+                seg_pred, trans_feat = classifier(points)
+                seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
 
-            batch_label = target.view(-1, 1)[:, 0].cpu().data.numpy()
-            target = target.view(-1, 1)[:, 0]
-            loss = criterion(seg_pred, target, trans_feat, weights)
+                batch_label = target.view(-1, 1)[:, 0].cpu().data.numpy()
+                target = target.view(-1, 1)[:, 0]
+                loss = criterion(seg_pred, target, trans_feat, weights)
+
+            # seg_pred, trans_feat = classifier(points)
+            # seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
+
+            # batch_label = target.view(-1, 1)[:, 0].cpu().data.numpy()
+            # target = target.view(-1, 1)[:, 0]
+            # loss = criterion(seg_pred, target, trans_feat, weights)
+
+            # scaler.scale(loss).backward()
+            # scaler.step(optimizer)
+            # scaler.update()
+
             loss.backward()
             optimizer.step()
 
@@ -313,7 +329,7 @@ def main(args):
             correct = np.sum(pred_choice == batch_label)
             total_correct += correct
             total_seen += BATCH_SIZE * NUM_POINT
-            loss_sum += loss
+            loss_sum += loss.item()
         log_string("Training mean loss: %f" % (loss_sum / num_batches))
         log_string("Training accuracy: %f" % (total_correct / float(total_seen)))
 
@@ -323,7 +339,8 @@ def main(args):
             log_string("Saving at %s" % savepath)
             state = {
                 "epoch": epoch,
-                "model_state_dict": classifier.state_dict(),
+                "model_state_dict": classifier.module.state_dict() if isinstance(classifier, torch.nn.DataParallel) else classifier.state_dict(),
+                # "model_state_dict": classifier.state_dict(),
                 "optimizer_state_dict": optimizer.state_dict(),
             }
             torch.save(state, savepath)
@@ -345,8 +362,6 @@ def main(args):
             for i, (points, target) in tqdm(
                 enumerate(testDataLoader), total=len(testDataLoader), smoothing=0.9
             ):
-                points = points.data.numpy()
-                points = torch.Tensor(points)
                 points, target = points.float().cuda(), target.long().cuda()
                 points = points.transpose(2, 1)
 
@@ -357,7 +372,7 @@ def main(args):
                 batch_label = target.cpu().data.numpy()
                 target = target.view(-1, 1)[:, 0]
                 loss = criterion(seg_pred, target, trans_feat, weights)
-                loss_sum += loss
+                loss_sum += loss.item()
                 pred_val = np.argmax(pred_val, 2)
                 correct = np.sum((pred_val == batch_label))
                 total_correct += correct
@@ -398,7 +413,7 @@ def main(args):
             for l in range(NUM_CLASSES):
                 iou_per_class_str += "class %s weight: %.3f, IoU: %.3f \n" % (
                     seg_label_to_cat[l] + " " * (14 - len(seg_label_to_cat[l])),
-                    labelweights[l - 1],
+                    labelweights[l],
                     total_correct_class[l] / float(total_iou_deno_class[l]),
                 )
 
@@ -414,9 +429,8 @@ def main(args):
                 state = {
                     "epoch": epoch,
                     "class_avg_iou": mIoU,
-                    "model_state_dict": classifier.module.state_dict()
-                    if isinstance(classifier, torch.nn.DataParallel)
-                    else classifier.state_dict(),
+                    "model_state_dict": classifier.module.state_dict() if isinstance(classifier, torch.nn.DataParallel) else classifier.state_dict(),
+                    # "model_state_dict": classifier.state_dict(),
                     "optimizer_state_dict": optimizer.state_dict(),
                 }
                 torch.save(state, savepath)

@@ -102,6 +102,11 @@ def query_ball_point(radius, nsample, xyz, new_xyz):
     group_idx[sqrdists > radius ** 2] = N
     group_idx = group_idx.sort(dim=-1)[0][:, :, :nsample]
     group_first = group_idx[:, :, 0].view(B, S, 1).repeat([1, 1, nsample])
+    # When a ball has no valid neighbors, group_first is N (sentinel = OOB).
+    # Fall back to the nearest point by sqrdist instead.
+    nearest = sqrdists.argmin(dim=-1).view(B, S, 1).repeat([1, 1, nsample])
+    all_empty = (group_first == N)
+    group_first = torch.where(all_empty, nearest, group_first)
     mask = group_idx == N
     group_idx[mask] = group_first[mask]
     return group_idx
